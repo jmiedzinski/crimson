@@ -2,6 +2,7 @@ package zbk.fun.crimson.entity;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -10,8 +11,11 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 
 public class Player implements InputProcessor {
+	
+	OrthographicCamera camera;
 
 	private Sprite sprite;
 
@@ -24,7 +28,6 @@ public class Player implements InputProcessor {
 	private Vector2 mouse;
 	private Vector2 position;
 	private Vector2 direction;
-	private Vector2 origin;
 	private Vector2 target;
 	private float rotation;
 
@@ -40,14 +43,16 @@ public class Player implements InputProcessor {
 
 	private BitmapFont font;
 
-	public Player(int width, int height, int rows, int cols, Texture texture, float animSpeed) {
+	public Player(OrthographicCamera camera, int width, int height, int rows, int cols, Texture texture, float animSpeed) {
+		
+		this.camera = camera;
 
 		this.width = width;
 		this.height = height;
 		this.rows = rows;
 		this.cols = cols;
 		this.animSpeed = animSpeed;
-		this.walkSpeed = 1f;
+		this.walkSpeed = 1.5f;
 		this.distance = 0f;
 
 		this.frames = new TextureRegion[rows * cols];
@@ -59,16 +64,14 @@ public class Player implements InputProcessor {
 
 		this.animation = new Animation(this.animSpeed, this.frames);
 		this.position = new Vector2(Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() / 2);
-		this.direction = this.position.cpy();
+		this.direction = new Vector2(1, 0);
 		this.mouse = new Vector2(0.0f, 0.0f);
 		this.target = new Vector2(0.0f, 0.0f);
-		this.origin = new Vector2(Gdx.graphics.getWidth() / 2 + (this.width / 2), Gdx.graphics.getHeight() / 2 + (this.height / 2));
 
 		this.sprite = new Sprite(this.frames[0]);
-		this.sprite.setPosition(this.position.x, this.position.y);
 		this.sprite.setRotation(0.0f);
 		this.sprite.setBounds(this.position.x, this.position.y, this.width, this.height);
-		this.sprite.setCenter(this.origin.x, this.origin.y);
+		this.sprite.setCenter(position.x, position.y);
 		this.sprite.setOriginCenter();
 
 		this.font = new BitmapFont();
@@ -86,12 +89,12 @@ public class Player implements InputProcessor {
 		else
 			this.sprite.setRegion(this.frames[0]);
 		
-		if (distance > 1f) {
+		if (distance > 20f) {
 			position.x += walkSpeed * Math.cos(MathUtils.degreesToRadians * direction.angle());
 			position.y += walkSpeed * Math.sin(MathUtils.degreesToRadians * direction.angle());
-			this.sprite.setPosition(this.position.x, this.position.y);
+			this.sprite.setCenter(this.position.x, this.position.y);
 			this.sprite.setOriginCenter();
-			this.distance = (float) Math.sqrt(Math.pow(target.x - position.x+width/2, 2) + Math.pow(target.y - position.y+height/2, 2));
+			this.distance = (float) Math.sqrt(Math.pow(target.x - position.x, 2) + Math.pow(target.y - position.y, 2));
 		} else {
 			moving = false;
 		}
@@ -100,31 +103,29 @@ public class Player implements InputProcessor {
 
 	public void render(SpriteBatch batch) {
 
-		int lines = 1;
-		font.draw(batch, "rotation: " + this.rotation, 10, 600 - lines * 15); 	lines++;
-		font.draw(batch, "direction: " + this.direction, 10, 600 - lines * 15); lines++;
-		font.draw(batch, "position: " + this.position, 10, 600 - lines * 15); 	lines++;
-		font.draw(batch, "distance: " + this.distance, 10, 600 - lines * 15); 	lines++;
+		font.draw(batch, Float.toString(Math.round(this.distance)), target.x, target.y);
 		sprite.draw(batch);
+		
 	}
 
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
 		
-		this.mouse.x = screenX;
-		this.mouse.y = Gdx.graphics.getHeight() - screenY;
+//		Vector3 world = new Vector3(screenX, Gdx.graphics.getHeight() - screenY, 0);
+//		camera.project(world);
 		
-		this.direction = mouse.sub(origin).nor().cpy();
+		this.direction = mouse.sub(position).nor().cpy();
 		this.rotation = direction.angle();
-
-		this.origin.x = this.position.x + (width / 2);
-		this.origin.y = this.position.y + (height / 2);
 
 		this.sprite.setRotation(rotation);
 		
 		this.target.x = screenX;
-		this.target.y = screenY;
-		this.distance = (float) Math.sqrt(Math.pow(target.x - position.x+width/2, 2) + Math.pow(target.y - position.y+height/2, 2));
+		this.target.y = Gdx.graphics.getHeight() - screenY;
+		
+//		this.target.x = world.x;
+//		this.target.y = world.y;
+		
+		this.distance = (float) Math.sqrt(Math.pow(target.x - position.x, 2) + Math.pow(target.y - position.y, 2));
 		moving = true;
 		
 		return false;
@@ -132,10 +133,7 @@ public class Player implements InputProcessor {
 
 	@Override
 	public boolean touchDragged(int screenX, int screenY, int pointer) {
-//		position.x += walkSpeed * Math.cos(direction.angle());
-//		position.y += walkSpeed * Math.sin(direction.angle());
-//		this.sprite.setPosition(this.position.x, this.position.y);
-//		this.sprite.setOriginCenter();
+
 		return false;
 	}
 
@@ -144,14 +142,7 @@ public class Player implements InputProcessor {
 
 		this.mouse.x = screenX;
 		this.mouse.y = Gdx.graphics.getHeight() - screenY;
-
-//		this.direction = mouse.sub(origin).nor();
-//		this.rotation = direction.angle();
-//
-//		this.origin.x = this.position.x + (width / 2);
-//		this.origin.y = this.position.y + (height / 2);
-//
-//		this.sprite.setRotation(rotation);
+		
 		return false;
 	}
 	
@@ -169,4 +160,36 @@ public class Player implements InputProcessor {
 
 	@Override
 	public boolean scrolled(int amount) { return false; }
+
+	public int getWidth() {
+		return width;
+	}
+
+	public int getHeight() {
+		return height;
+	}
+
+	public Vector2 getMouse() {
+		return mouse;
+	}
+
+	public Vector2 getPosition() {
+		return position;
+	}
+
+	public Vector2 getDirection() {
+		return direction;
+	}
+
+	public Vector2 getTarget() {
+		return target;
+	}
+
+	public Sprite getSprite() {
+		return sprite;
+	}
+
+	public boolean isMoving() {
+		return moving;
+	}
 }
