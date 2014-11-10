@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 
@@ -26,9 +27,9 @@ public class Player implements InputProcessor {
 	private int height;
 
 	private Vector2 mouse;
-	private Vector2 position;
-	private Vector2 direction;
-	private Vector2 target;
+	public Vector2 position;
+	public Vector2 direction;
+	public Vector2 target;
 	private float rotation;
 
 	private TextureRegion[] frames;
@@ -42,6 +43,8 @@ public class Player implements InputProcessor {
 	private boolean moving;
 
 	private BitmapFont font;
+	
+	private Rectangle bbox;
 
 	public Player(OrthographicCamera camera, int width, int height, int rows, int cols, Texture texture, float animSpeed) {
 		
@@ -79,6 +82,7 @@ public class Player implements InputProcessor {
 		font.setScale(1.0f);
 		
 		moving = false;
+		bbox = new Rectangle(position.x-25, position.y-25, 50, 50);
 	}
 
 	public void update() {
@@ -98,6 +102,7 @@ public class Player implements InputProcessor {
 		} else {
 			moving = false;
 		}
+		bbox.set(position.x-25, position.y-25, 50, 50);
 
 	}
 
@@ -111,22 +116,20 @@ public class Player implements InputProcessor {
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
 		
-//		Vector3 world = new Vector3(screenX, Gdx.graphics.getHeight() - screenY, 0);
-//		camera.project(world);
+		Vector3 click = new Vector3(screenX, screenY, 0f);
+		camera.unproject(click);
 		
-		this.direction = mouse.sub(position).nor().cpy();
+		this.target.x = click.x;
+		this.target.y = click.y;
+		
+		this.direction = target.cpy().sub(position).nor();
 		this.rotation = direction.angle();
 
 		this.sprite.setRotation(rotation);
 		
-		this.target.x = screenX;
-		this.target.y = Gdx.graphics.getHeight() - screenY;
-		
-//		this.target.x = world.x;
-//		this.target.y = world.y;
-		
 		this.distance = (float) Math.sqrt(Math.pow(target.x - position.x, 2) + Math.pow(target.y - position.y, 2));
-		moving = true;
+		if (distance > 20f)
+			moving = true;
 		
 		return false;
 	}
@@ -140,8 +143,8 @@ public class Player implements InputProcessor {
 	@Override
 	public boolean mouseMoved(int screenX, int screenY) {
 
-		this.mouse.x = screenX;
-		this.mouse.y = Gdx.graphics.getHeight() - screenY;
+//		this.mouse.x = screenX;
+//		this.mouse.y = Gdx.graphics.getHeight() - screenY;
 		
 		return false;
 	}
@@ -192,4 +195,25 @@ public class Player implements InputProcessor {
 	public boolean isMoving() {
 		return moving;
 	}
+
+	public void setCamera(OrthographicCamera camera) {
+		this.camera = camera;
+	}
+	
+	public void stop() {
+		this.distance = 0f;
+	}
+	
+	public void stepBack() {
+		position.x -= walkSpeed * Math.cos(MathUtils.degreesToRadians * direction.angle());
+		position.y -= walkSpeed * Math.sin(MathUtils.degreesToRadians * direction.angle());
+		this.sprite.setCenter(this.position.x, this.position.y);
+		this.sprite.setOriginCenter();
+	}
+
+	public Rectangle getBbox() {
+		return bbox;
+	}
+	
+	
 }
