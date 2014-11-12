@@ -5,6 +5,7 @@ import java.util.List;
 
 import zbk.fun.crimson.entity.Bloodmark;
 import zbk.fun.crimson.entity.Enemy;
+import zbk.fun.crimson.entity.Explosive;
 import zbk.fun.crimson.entity.Player;
 import zbk.fun.crimson.entity.Projectile;
 import zbk.fun.crimson.entity.Weapon;
@@ -41,7 +42,6 @@ import com.badlogic.gdx.utils.Pools;
 
 public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	SpriteBatch batch;
-	//	Texture img;
 	BitmapFont font;
 	Player player;
 	OrthographicCamera camera;
@@ -62,18 +62,15 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	List<Enemy> enemies;
 	List<Enemy> deadEnemies;
 
-//	List<Projectile> projectiles;
-//	List<Projectile> inactiveProjectiles;
-
 	List<Bloodmark> bloodmarks;
 	List<Bloodmark> inactiveBloodmarks;
 
-	ParticleEffectPool bombEffectPool;
+	ParticleEffectPool bloodEffectPool;
 	Array<PooledEffect> effects = new Array<PooledEffect>();
 	
-//	Pool<Projectile> projectilePool;
-//	Array<Projectile> projectiless;
-
+	ParticleEffectPool explosionEffectPool;
+	Array<PooledEffect> explosionEffects = new Array<PooledEffect>();
+	
 	List<Weapon> weapons;
 
 	@Override
@@ -110,27 +107,25 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		camMaxTop = mapSize *tileSize - camera.viewportHeight / 2;
 		camMaxBottom = camera.viewportHeight / 2;
 
-		ParticleEffect bombEffect = new ParticleEffect();
-		bombEffect.load(Gdx.files.internal("assets/blood.p"), Gdx.files.internal("assets"));
-		bombEffectPool = new ParticleEffectPool(bombEffect, 10, 50);
+		ParticleEffect bloodEffect = new ParticleEffect();
+		bloodEffect.load(Gdx.files.internal("assets/blood.p"), Gdx.files.internal("assets"));
+		bloodEffectPool = new ParticleEffectPool(bloodEffect, 10, 50);
+		
+		ParticleEffect explosionEffect = new ParticleEffect();
+		explosionEffect.load(Gdx.files.internal("assets/explosion.p"), Gdx.files.internal("assets"));
+		explosionEffectPool = new ParticleEffectPool(explosionEffect, 10, 50);
 
 		enemies = new ArrayList<Enemy>();
-		for (int i=0; i<100; i++) {
-			Enemy e = new Enemy(bombEffectPool);
+		for (int i=0; i<50; i++) {
+			Enemy e = new Enemy(bloodEffectPool);
 			enemies.add(e);
 		}
 		
-//		projectilePool = Pools.get(Projectile.class);
-//		projectiless = new Array<Projectile>();
-
-//		projectiles = new ArrayList<Projectile>();
-//		inactiveProjectiles = new ArrayList<Projectile>();
 		deadEnemies = new ArrayList<Enemy>();
 
 		bloodmarks = new ArrayList<Bloodmark>();
 		inactiveBloodmarks = new ArrayList<Bloodmark>();
 
-//		player.projectiles = projectiles;
 		weapons = new ArrayList<Weapon>();
 		Weapon pistol = new Weapon(WeaponType.PISTOL);
 		weapons.add(pistol);
@@ -190,7 +185,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		player.render(batch);
 		for (Enemy e : enemies) {
 			if (e.life > 0f) {
-				e.update(enemies);
+				e.update(player, enemies);
 				e.render(batch);
 			} else {
 				deadEnemies.add(e);
@@ -209,6 +204,12 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		}
 		PoolManager.instance().clearBullets();
 		
+		for (Explosive e : PoolManager.instance().getExplosives()) {
+			e.update(enemies);
+			e.render(batch);
+		}
+		PoolManager.instance().clearExplosives();
+		
 		// Update and draw effects:
 		for (int i = effects.size - 1; i >= 0; i--) {
 			PooledEffect effect = effects.get(i);
@@ -218,6 +219,17 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 				effects.removeIndex(i);
 			}
 		}
+		
+		// Update and draw effects:
+		for (int i = explosionEffects.size - 1; i >= 0; i--) {
+			PooledEffect effect = explosionEffects.get(i);
+			effect.draw(batch, Gdx.graphics.getDeltaTime());
+			if (effect.isComplete()) {
+				effect.free();
+				effects.removeIndex(i);
+			}
+		}		
+		
 		renderHUD(batch);
 		batch.end();
 

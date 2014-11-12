@@ -70,37 +70,44 @@ public class Enemy {
 
 		walkSpeed = 0.5f;
 		life = 100f;
+		activationRadius = MathUtils.random(150f, 300f);
 		bbox = new Rectangle(position.x - width / 2, position.y - height / 2, width, height);
 	}
 
-	public void update(List<Enemy> enemies) {
+	public void update(Player player, List<Enemy> enemies) {
 
 		float walkFluct = walkSpeed;
 		time += Gdx.graphics.getDeltaTime();
 
-		timeToChangeDir -= Gdx.graphics.getDeltaTime();
-
-		if (timeToChangeDir <= 0.0f) {
-			timeToChangeDir = MathUtils.random(10f);
-			target = new Vector2(MathUtils.random(1600), MathUtils.random(1600));
-
-			this.direction = target.cpy().sub(position).nor();
+		if (position.dst(player.position) <= activationRadius) {
+			this.direction = player.position.cpy().sub(position).nor();
 			this.rotation = -90 + direction.angle();
+		} else {
 
-			this.sprite.setRotation(rotation);
+			timeToChangeDir -= Gdx.graphics.getDeltaTime();
 
-			this.distance = (float) Math.sqrt(Math.pow(target.x - position.x, 2) + Math.pow(target.y - position.y, 2));
-			walkFluct = (float) (walkSpeed + (Math.sin(time) * 0.7f));
+			if (timeToChangeDir <= 0.0f) {
+				timeToChangeDir = MathUtils.random(10f);
+				target = new Vector2(MathUtils.random(1600), MathUtils.random(1600));
 
-		}
+				this.direction = target.cpy().sub(position).nor();
+				this.rotation = -90 + direction.angle();
 
-		for (Enemy e : enemies) {
-			if (!e.equals(this)) {
-				if (e.bbox.overlaps(bbox)) {
-					if (e.direction != null) {
-						float angle = direction.angle(e.direction);
-						direction.x = (float) Math.sin(angle);
-						direction.y = (float) Math.cos(angle);
+				this.sprite.setRotation(rotation);
+
+				this.distance = (float) Math.sqrt(Math.pow(target.x - position.x, 2) + Math.pow(target.y - position.y, 2));
+				walkFluct = (float) (walkSpeed + (Math.sin(time) * 0.7f));
+
+			}
+
+			for (Enemy e : enemies) {
+				if (!e.equals(this)) {
+					if (e.bbox.overlaps(bbox)) {
+						if (e.direction != null) {
+							float angle = direction.angle(e.direction);
+							direction.x = (float) Math.sin(angle);
+							direction.y = (float) Math.cos(angle);
+						}
 					}
 				}
 			}

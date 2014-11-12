@@ -3,6 +3,9 @@ package zbk.fun.crimson.entity;
 import java.util.LinkedList;
 import java.util.List;
 
+import zbk.fun.crimson.enums.ExplosiveType;
+import zbk.fun.crimson.utils.PoolManager;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Input.Keys;
@@ -191,6 +194,10 @@ public class Player implements InputProcessor {
 		if (keycode == Keys.R) {
 			if (currentWeapon != null)
 				currentWeapon.reload();
+		}
+		if (keycode == Keys.E) {
+			Explosive e = PoolManager.instance().getExplosive();
+			e.init(ExplosiveType.C4, position);
 		}
 
 		return false;
