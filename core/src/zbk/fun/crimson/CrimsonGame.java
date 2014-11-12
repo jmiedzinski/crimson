@@ -1,6 +1,15 @@
 package zbk.fun.crimson;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import zbk.fun.crimson.entity.Bloodmark;
+import zbk.fun.crimson.entity.Enemy;
 import zbk.fun.crimson.entity.Player;
+import zbk.fun.crimson.entity.Projectile;
+import zbk.fun.crimson.entity.Weapon;
+import zbk.fun.crimson.enums.WeaponType;
+import zbk.fun.crimson.utils.PoolManager;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -12,6 +21,9 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.ParticleEffect;
+import com.badlogic.gdx.graphics.g2d.ParticleEffectPool;
+import com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
@@ -23,10 +35,13 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Pool;
+import com.badlogic.gdx.utils.Pools;
 
 public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	SpriteBatch batch;
-	Texture img;
+	//	Texture img;
 	BitmapFont font;
 	Player player;
 	OrthographicCamera camera;
@@ -44,13 +59,28 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 	float camMaxLeft, camMaxRight, camMaxTop, camMaxBottom;
 
+	List<Enemy> enemies;
+	List<Enemy> deadEnemies;
+
+//	List<Projectile> projectiles;
+//	List<Projectile> inactiveProjectiles;
+
+	List<Bloodmark> bloodmarks;
+	List<Bloodmark> inactiveBloodmarks;
+
+	ParticleEffectPool bombEffectPool;
+	Array<PooledEffect> effects = new Array<PooledEffect>();
+	
+//	Pool<Projectile> projectilePool;
+//	Array<Projectile> projectiless;
+
+	List<Weapon> weapons;
+
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, 800, 600);
-
-
 
 		player = new Player(camera, 80, 87, 1, 6, new Texture(Gdx.files.internal("assets/player.png")), 0.125f);
 		player.setCamera(camera);
@@ -64,8 +94,6 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		mapSize = Integer.parseInt(tiledMap.getProperties().get("map_size", String.class));
 		tileSize = Integer.parseInt(tiledMap.getProperties().get("tile_size", String.class));
 		mapBounds = new Rectangle(0f, 0f, mapSize*tileSize, mapSize*tileSize);
-
-
 
 		inputMultiplexer = new InputMultiplexer();
 		inputMultiplexer.addProcessor(player);
@@ -81,15 +109,45 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		camMaxRight = mapSize * tileSize - camera.viewportWidth / 2;
 		camMaxTop = mapSize *tileSize - camera.viewportHeight / 2;
 		camMaxBottom = camera.viewportHeight / 2;
+
+		ParticleEffect bombEffect = new ParticleEffect();
+		bombEffect.load(Gdx.files.internal("assets/blood.p"), Gdx.files.internal("assets"));
+		bombEffectPool = new ParticleEffectPool(bombEffect, 10, 50);
+
+		enemies = new ArrayList<Enemy>();
+		for (int i=0; i<100; i++) {
+			Enemy e = new Enemy(bombEffectPool);
+			enemies.add(e);
+		}
+		
+//		projectilePool = Pools.get(Projectile.class);
+//		projectiless = new Array<Projectile>();
+
+//		projectiles = new ArrayList<Projectile>();
+//		inactiveProjectiles = new ArrayList<Projectile>();
+		deadEnemies = new ArrayList<Enemy>();
+
+		bloodmarks = new ArrayList<Bloodmark>();
+		inactiveBloodmarks = new ArrayList<Bloodmark>();
+
+//		player.projectiles = projectiles;
+		weapons = new ArrayList<Weapon>();
+		Weapon pistol = new Weapon(WeaponType.PISTOL);
+		weapons.add(pistol);
+		Weapon shotgun = new Weapon(WeaponType.SHOTGUN);
+		weapons.add(shotgun);
+		Weapon machinegun = new Weapon(WeaponType.MACHINE_GUN);
+		weapons.add(machinegun);
+
 	}
 
 	private void moveCamera() {
-		
+
 		Vector2 camNextPoint = new Vector2(camera.position.x + 1.5f * player.direction.x, camera.position.y + 1.5f * player.direction.y);
 		Vector2 playerNextPoint = new Vector2(player.position.x + 1.5f * player.direction.x, player.position.y + 1.5f * player.direction.y);
 		float playerCamDistanceNext = (float) Math.sqrt(Math.pow(playerNextPoint.x - camera.position.x, 2) + Math.pow(playerNextPoint.y - camera.position.y, 2));
 		float playerCamDistance = (float) Math.sqrt(Math.pow(player.position.x - camera.position.x, 2) + Math.pow(player.position.y - camera.position.y, 2));
-		
+
 
 		if (player.isMoving() && playerCamDistanceNext > 200f && playerCamDistanceNext > playerCamDistance) {
 			if (camNextPoint.x > camMaxLeft && camNextPoint.x < camMaxRight) {
@@ -113,13 +171,67 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		tiledMapRenderer.setView(camera);
 		tiledMapRenderer.render();
 		batch.begin();
-		player.render(batch);
 
+		for (Bloodmark b : bloodmarks) {
+			if (b.active) {
+				b.render(batch);
+			} else {
+				inactiveBloodmarks.add(b);
+			}
+		}
+		bloodmarks.removeAll(inactiveBloodmarks);
+		inactiveBloodmarks.clear();
+
+		for (Weapon w : weapons) {
+			w.update(player);
+			w.render(batch);
+		}
+
+		player.render(batch);
+		for (Enemy e : enemies) {
+			if (e.life > 0f) {
+				e.update(enemies);
+				e.render(batch);
+			} else {
+				deadEnemies.add(e);
+			}
+		}
+		enemies.removeAll(deadEnemies);
+		deadEnemies.clear();
+
+		for (Projectile p : PoolManager.instance().getBullets()) {
+			if (p.active) {
+				p.update(enemies, effects, bloodmarks);
+				p.render(batch);
+			} else {
+				PoolManager.instance().getBulletsToRemove().add(p);
+			}
+		}
+		PoolManager.instance().clearBullets();
+		
+		// Update and draw effects:
+		for (int i = effects.size - 1; i >= 0; i--) {
+			PooledEffect effect = effects.get(i);
+			effect.draw(batch, Gdx.graphics.getDeltaTime());
+			if (effect.isComplete()) {
+				effect.free();
+				effects.removeIndex(i);
+			}
+		}
+		renderHUD(batch);
 		batch.end();
 
 		shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
 		shapeRenderer.begin(ShapeType.Line);
 		shapeRenderer.setColor(Color.WHITE);
+
+		for (Enemy e : enemies) {
+			e.postRender(shapeRenderer);
+		}
+
+		for (Projectile p : PoolManager.instance().getBullets()) {
+			p.postRender(shapeRenderer);
+		}
 
 		shapeRenderer.rect(player.getBbox().x, player.getBbox().y, player.getBbox().width, player.getBbox().height);
 
@@ -147,8 +259,25 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		font.draw(batch, "POS: " + MathUtils.round(player.getPosition().x) + ":" + MathUtils.round(player.getPosition().y), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "CAM: " + MathUtils.round(camera.position.x) + ":" + MathUtils.round(camera.position.y), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "CLK: " + MathUtils.round(click.x) + ":" + MathUtils.round(click.y), screen.x, screen.y - (lines*15)); 	lines++;
+		font.draw(batch, "ENM: " + enemies.size(), screen.x, screen.y - (lines*15)); 	lines++;
+		font.draw(batch, "PRJ: " + PoolManager.instance().getBullets().size(), screen.x, screen.y - (lines*15)); 	lines++;
+		font.draw(batch, "BLM: " + bloodmarks.size(), screen.x, screen.y - (lines*15)); 	lines++;
+
 		batch.end();
 
+	}
+
+	public void renderHUD(SpriteBatch batch) {
+
+		if (player.currentWeapon != null) {
+			Vector3 screen = new Vector3(Gdx.graphics.getWidth() - player.currentWeapon.width - 10, 10 + player.currentWeapon.height, 0);
+			camera.unproject(screen);
+			player.currentWeapon.sprite.setPosition(screen.x, screen.y);
+			player.currentWeapon.sprite.draw(batch);
+			screen.set(Gdx.graphics.getWidth() - player.currentWeapon.width - 20, 10 + player.currentWeapon.height, 0);
+			camera.unproject(screen);
+			font.draw(batch, Integer.toString(player.currentWeapon.clip), screen.x, screen.y);
+		}
 	}
 
 	@Override

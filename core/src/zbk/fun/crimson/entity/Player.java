@@ -1,6 +1,11 @@
 package zbk.fun.crimson.entity;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -15,7 +20,9 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 
 public class Player implements InputProcessor {
-	
+
+	public static final int weaponSlots = 3;
+
 	OrthographicCamera camera;
 
 	private Sprite sprite;
@@ -39,15 +46,20 @@ public class Player implements InputProcessor {
 	private float animSpeed;
 	private float walkSpeed;
 	private float distance;
-	
+
 	private boolean moving;
 
 	private BitmapFont font;
-	
+
 	private Rectangle bbox;
 
+	public List<Weapon> weapons;
+
+	public Weapon currentWeapon;
+	public int currWeaponIndex = -1;
+
 	public Player(OrthographicCamera camera, int width, int height, int rows, int cols, Texture texture, float animSpeed) {
-		
+
 		this.camera = camera;
 
 		this.width = width;
@@ -80,9 +92,10 @@ public class Player implements InputProcessor {
 		this.font = new BitmapFont();
 		font.setColor(1.0f, 1.0f, 1.0f, 1.0f);
 		font.setScale(1.0f);
-		
+
 		moving = false;
 		bbox = new Rectangle(position.x-25, position.y-25, 50, 50);
+		weapons = new LinkedList<Weapon>();
 	}
 
 	public void update() {
@@ -92,7 +105,7 @@ public class Player implements InputProcessor {
 			this.sprite.setRegion(this.animation.getKeyFrame(time, moving));
 		else
 			this.sprite.setRegion(this.frames[0]);
-		
+
 		if (distance > 20f) {
 			position.x += walkSpeed * Math.cos(MathUtils.degreesToRadians * direction.angle());
 			position.y += walkSpeed * Math.sin(MathUtils.degreesToRadians * direction.angle());
@@ -110,27 +123,38 @@ public class Player implements InputProcessor {
 
 		font.draw(batch, Float.toString(Math.round(this.distance)), target.x, target.y);
 		sprite.draw(batch);
-		
+
 	}
 
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-		
-		Vector3 click = new Vector3(screenX, screenY, 0f);
-		camera.unproject(click);
-		
-		this.target.x = click.x;
-		this.target.y = click.y;
-		
-		this.direction = target.cpy().sub(position).nor();
-		this.rotation = direction.angle();
 
-		this.sprite.setRotation(rotation);
-		
-		this.distance = (float) Math.sqrt(Math.pow(target.x - position.x, 2) + Math.pow(target.y - position.y, 2));
-		if (distance > 20f)
-			moving = true;
-		
+		if (button == Input.Buttons.RIGHT) {
+
+			Vector3 click = new Vector3(screenX, screenY, 0f);
+			camera.unproject(click);
+
+			this.target.x = click.x;
+			this.target.y = click.y;
+
+			this.direction = target.cpy().sub(position).nor();
+			this.rotation = direction.angle();
+
+			this.sprite.setRotation(rotation);
+
+			this.distance = (float) Math.sqrt(Math.pow(target.x - position.x, 2) + Math.pow(target.y - position.y, 2));
+			if (distance > 20f)
+				moving = true;
+
+		} else if (button == Input.Buttons.LEFT) {
+
+			Vector3 projTarget = new Vector3(screenX, screenY, 0f);
+			camera.unproject(projTarget);
+
+			if (currentWeapon != null) {
+				currentWeapon.fire(position.cpy(), new Vector2(projTarget.x, projTarget.y));
+			}
+		}
 		return false;
 	}
 
@@ -143,21 +167,41 @@ public class Player implements InputProcessor {
 	@Override
 	public boolean mouseMoved(int screenX, int screenY) {
 
-//		this.mouse.x = screenX;
-//		this.mouse.y = Gdx.graphics.getHeight() - screenY;
-		
+		if (!moving) {
+			Vector3 click = new Vector3(screenX, screenY, 0f);
+			camera.unproject(click);
+
+			this.target.x = click.x;
+			this.target.y = click.y;
+
+			this.direction = target.cpy().sub(position).nor();
+			this.rotation = direction.angle();
+
+			this.sprite.setRotation(rotation);
+		}
+
 		return false;
 	}
-	
+
 	@Override
-	public boolean keyDown(int keycode) { return false;	}
+	public boolean keyDown(int keycode) {
+
+		if (keycode == Keys.Q)
+			cycleWeapon();
+		if (keycode == Keys.R) {
+			if (currentWeapon != null)
+				currentWeapon.reload();
+		}
+
+		return false;
+	}
 
 	@Override
 	public boolean keyUp(int keycode) { return false; }
 
 	@Override
 	public boolean keyTyped(char character) { return false; }
-	
+
 	@Override
 	public boolean touchUp(int screenX, int screenY, int pointer, int button) { return false; }
 
@@ -199,11 +243,11 @@ public class Player implements InputProcessor {
 	public void setCamera(OrthographicCamera camera) {
 		this.camera = camera;
 	}
-	
+
 	public void stop() {
 		this.distance = 0f;
 	}
-	
+
 	public void stepBack() {
 		position.x -= walkSpeed * Math.cos(MathUtils.degreesToRadians * direction.angle());
 		position.y -= walkSpeed * Math.sin(MathUtils.degreesToRadians * direction.angle());
@@ -214,6 +258,31 @@ public class Player implements InputProcessor {
 	public Rectangle getBbox() {
 		return bbox;
 	}
-	
-	
+
+	public void pickup(Pickable pickable) {
+
+		if (pickable instanceof Weapon) {
+			Weapon weapon = (Weapon) pickable;
+			weapons.add(weapon);
+			if (currWeaponIndex == -1) {
+				currWeaponIndex++;
+				currentWeapon = weapons.get(currWeaponIndex);
+			}
+		}
+	}
+
+	public void cycleWeapon() {
+
+		if (!weapons.isEmpty()) {
+			if (currWeaponIndex < weapons.size() - 1)
+				currWeaponIndex++;
+			else {
+				currWeaponIndex = 0;
+			}
+			currentWeapon = weapons.get(currWeaponIndex);
+		}
+
+	}
+
+
 }
