@@ -43,6 +43,8 @@ public class PoolManager {
 	}
 	
 	public void clearBullets() {
+		for (Projectile p : bulletsToRemove)
+			bulletPool.free(p);
 		bullets.removeAll(bulletsToRemove);
 		bulletsToRemove.clear();
 	}

@@ -19,6 +19,7 @@ import com.badlogic.gdx.utils.Pool.Poolable;
 
 public class Projectile implements Poolable{
 
+	public Vector2 startPoint;
 	public Vector2 position;
 	public Vector2 direction;
 	public Vector2 target;
@@ -54,6 +55,7 @@ public class Projectile implements Poolable{
 		this.width = t.getWidth();
 		this.height = t.getHeight();
 
+		this.startPoint = position.cpy();
 		this.position = position;
 		this.target = target;
 		this.direction = target.cpy().sub(position).nor();
@@ -85,7 +87,7 @@ public class Projectile implements Poolable{
 			this.sprite.setOriginCenter();
 			bbox.set(position.x - width / 2, position.y - height / 2, width, height);
 			
-			this.distance = (float) Math.sqrt(Math.pow(target.x - position.x, 2) + Math.pow(target.y - position.y, 2));
+			this.distance = (float) Math.sqrt(Math.pow(position.x - startPoint.x, 2) + Math.pow(position.y - startPoint.y, 2));
 			if (distance > maxDistance)
 				active = false;
 			
@@ -96,7 +98,6 @@ public class Projectile implements Poolable{
 					effects.add(e.effect(this));
 					bloodmarks.add(new Bloodmark(e.position.cpy(), rotation));
 					active = false;
-					PoolManager.instance().getBulletPool().free(this);
 				}
 			}
 		}
