@@ -1,13 +1,15 @@
 package zbk.fun.crimson.entity;
 
+import zbk.fun.crimson.enums.SurfacemarkType;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Pool.Poolable;
 
-public class Bloodmark {
+public class Surfacemark implements Poolable {
 
 	public Vector2 position;
 	public float rotation;
@@ -21,13 +23,18 @@ public class Bloodmark {
 	
 	public boolean active;
 	
-	public Bloodmark(Vector2 position, float rotation) {
+	public Surfacemark() {
+
+	}
+	
+	public void init(SurfacemarkType type, Vector2 position, float rotation) {
+		
 		this.position = position;
 		this.rotation = rotation;
 		
-		this.ttl = MathUtils.random(5f, 10f);
+		this.ttl = type.getTtl();
 		this.time = ttl;
-		this.texture = new Texture(Gdx.files.internal("assets/bloodmark01.png"));
+		this.texture = new Texture(Gdx.files.internal("assets/" + type.name().toLowerCase() + ".png"));
 		this.alfa = 1.0f;
 		this.active = true;
 		this.sprite = new Sprite(texture);
@@ -48,7 +55,14 @@ public class Bloodmark {
 	
 	public void render(SpriteBatch batch) {
 		update();
-//		batch.draw(texture, position.x, position.y);
 		sprite.draw(batch, alfa);
+	}
+
+	@Override
+	public void reset() {
+
+		active = false;
+		alfa = 1.0f;
+		
 	}
 }

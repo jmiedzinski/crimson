@@ -3,11 +3,15 @@ package zbk.fun.crimson.entity;
 import java.util.List;
 
 import zbk.fun.crimson.enums.ExplosiveType;
-import zbk.fun.crimson.utils.PoolManager;
+import zbk.fun.crimson.enums.SurfacemarkType;
+import zbk.fun.crimson.utils.EffectsManager;
+import zbk.fun.crimson.utils.GameObjectManager;
+import zbk.fun.crimson.utils.MarksManager;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -90,7 +94,19 @@ public class Explosive implements Poolable {
 				e.life -= type.getDamage();
 			}
 		}
-		PoolManager.instance().getExplosivesToRemove().add(this);
+		effect();
+		GameObjectManager.instance().getExplosivesToRemove().add(this);
+		mark();
+	}
+	
+	private void effect() {
+		PooledEffect effect = EffectsManager.instance().newExplosionEffect();
+		effect.setPosition(position.x-width/2, position.y-height/2);
+	}
+	
+	private void mark() {
+		Surfacemark mark = MarksManager.instance().getMark();
+		mark.init(SurfacemarkType.EXPLOSIONMARK, position, 90f);
 	}
 	
 	public void render(SpriteBatch batch) {

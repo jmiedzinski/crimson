@@ -3,15 +3,16 @@ package zbk.fun.crimson.entity;
 import java.util.List;
 import java.util.UUID;
 
+import zbk.fun.crimson.utils.EffectsManager;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.ParticleEffectPool;
+import com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect;
 import com.badlogic.gdx.graphics.g2d.ParticleEmitter.ScaledNumericValue;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -43,10 +44,7 @@ public class Enemy {
 
 	public Rectangle bbox;
 
-	//	private PooledEffect effect;
-	private ParticleEffectPool pool;
-
-	public Enemy(ParticleEffectPool pool) {
+	public Enemy() {
 
 		id = UUID.randomUUID().hashCode();
 
@@ -65,8 +63,6 @@ public class Enemy {
 		sprite.setRotation(-90f);
 		//		sprite.scale(-0.3f);
 		timeToChangeDir = 0f;
-
-		this.pool = pool;
 
 		walkSpeed = 0.5f;
 		life = 100f;
@@ -133,7 +129,7 @@ public class Enemy {
 
 	public PooledEffect effect(Projectile p) {
 
-		PooledEffect effect = pool.obtain();
+		PooledEffect effect = EffectsManager.instance().newBloodEffect();
 		effect.setPosition(position.x-width/2, position.y-height/2);
 		for (int i = 0; i < effect.getEmitters().size; i++) {                          
 			ScaledNumericValue val = effect.getEmitters().get(i).getAngle();           

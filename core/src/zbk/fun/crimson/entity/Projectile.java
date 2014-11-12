@@ -2,19 +2,19 @@ package zbk.fun.crimson.entity;
 
 import java.util.List;
 
-import zbk.fun.crimson.utils.PoolManager;
+import zbk.fun.crimson.enums.SurfacemarkType;
+import zbk.fun.crimson.utils.EffectsManager;
+import zbk.fun.crimson.utils.MarksManager;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool.Poolable;
 
 public class Projectile implements Poolable{
@@ -76,7 +76,7 @@ public class Projectile implements Poolable{
 		this.active = true;
 	}
 
-	public void update(List<Enemy> enemies, Array<PooledEffect> effects, List<Bloodmark> bloodmarks) {
+	public void update(List<Enemy> enemies) {
 
 		if (active) {
 			time += Gdx.graphics.getDeltaTime();
@@ -95,8 +95,9 @@ public class Projectile implements Poolable{
 				
 				if (bbox.overlaps(e.bbox)) {
 					e.life -= damage;
-					effects.add(e.effect(this));
-					bloodmarks.add(new Bloodmark(e.position.cpy(), rotation));
+					e.effect(this);
+					Surfacemark mark = MarksManager.instance().getMark();
+					mark.init(SurfacemarkType.BLOODMARK, position.cpy(), rotation);
 					active = false;
 				}
 			}

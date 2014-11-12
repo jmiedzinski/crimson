@@ -3,14 +3,14 @@ package zbk.fun.crimson;
 import java.util.ArrayList;
 import java.util.List;
 
-import zbk.fun.crimson.entity.Bloodmark;
 import zbk.fun.crimson.entity.Enemy;
-import zbk.fun.crimson.entity.Explosive;
 import zbk.fun.crimson.entity.Player;
 import zbk.fun.crimson.entity.Projectile;
 import zbk.fun.crimson.entity.Weapon;
 import zbk.fun.crimson.enums.WeaponType;
-import zbk.fun.crimson.utils.PoolManager;
+import zbk.fun.crimson.utils.EffectsManager;
+import zbk.fun.crimson.utils.GameObjectManager;
+import zbk.fun.crimson.utils.MarksManager;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -22,9 +22,6 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.ParticleEffect;
-import com.badlogic.gdx.graphics.g2d.ParticleEffectPool;
-import com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
@@ -36,9 +33,6 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.Pool;
-import com.badlogic.gdx.utils.Pools;
 
 public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	SpriteBatch batch;
@@ -50,8 +44,6 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	TiledMapRenderer tiledMapRenderer;
 	InputMultiplexer inputMultiplexer;
 
-	Vector3 click;
-
 	int mapSize;
 	int tileSize;
 	Rectangle mapBounds;
@@ -62,15 +54,6 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	List<Enemy> enemies;
 	List<Enemy> deadEnemies;
 
-	List<Bloodmark> bloodmarks;
-	List<Bloodmark> inactiveBloodmarks;
-
-	ParticleEffectPool bloodEffectPool;
-	Array<PooledEffect> effects = new Array<PooledEffect>();
-	
-	ParticleEffectPool explosionEffectPool;
-	Array<PooledEffect> explosionEffects = new Array<PooledEffect>();
-	
 	List<Weapon> weapons;
 
 	@Override
@@ -100,31 +83,21 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		font = new BitmapFont();
 		font.setColor(1.0f, 1.0f, 1.0f, 1.0f);
 		font.setScale(1.0f);
-		click = new Vector3(0, 0, 0);
 
 		camMaxLeft = camera.viewportWidth / 2;
 		camMaxRight = mapSize * tileSize - camera.viewportWidth / 2;
 		camMaxTop = mapSize *tileSize - camera.viewportHeight / 2;
 		camMaxBottom = camera.viewportHeight / 2;
 
-		ParticleEffect bloodEffect = new ParticleEffect();
-		bloodEffect.load(Gdx.files.internal("assets/blood.p"), Gdx.files.internal("assets"));
-		bloodEffectPool = new ParticleEffectPool(bloodEffect, 10, 50);
-		
-		ParticleEffect explosionEffect = new ParticleEffect();
-		explosionEffect.load(Gdx.files.internal("assets/explosion.p"), Gdx.files.internal("assets"));
-		explosionEffectPool = new ParticleEffectPool(explosionEffect, 10, 50);
+
 
 		enemies = new ArrayList<Enemy>();
 		for (int i=0; i<50; i++) {
-			Enemy e = new Enemy(bloodEffectPool);
+			Enemy e = new Enemy();
 			enemies.add(e);
 		}
 		
 		deadEnemies = new ArrayList<Enemy>();
-
-		bloodmarks = new ArrayList<Bloodmark>();
-		inactiveBloodmarks = new ArrayList<Bloodmark>();
 
 		weapons = new ArrayList<Weapon>();
 		Weapon pistol = new Weapon(WeaponType.PISTOL);
@@ -167,15 +140,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		tiledMapRenderer.render();
 		batch.begin();
 
-		for (Bloodmark b : bloodmarks) {
-			if (b.active) {
-				b.render(batch);
-			} else {
-				inactiveBloodmarks.add(b);
-			}
-		}
-		bloodmarks.removeAll(inactiveBloodmarks);
-		inactiveBloodmarks.clear();
+		MarksManager.instance().renderMarks(batch);
 
 		for (Weapon w : weapons) {
 			w.update(player);
@@ -194,41 +159,12 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		enemies.removeAll(deadEnemies);
 		deadEnemies.clear();
 
-		for (Projectile p : PoolManager.instance().getBullets()) {
-			if (p.active) {
-				p.update(enemies, effects, bloodmarks);
-				p.render(batch);
-			} else {
-				PoolManager.instance().getBulletsToRemove().add(p);
-			}
-		}
-		PoolManager.instance().clearBullets();
+		GameObjectManager.instance().renderBullets(batch, enemies);
 		
-		for (Explosive e : PoolManager.instance().getExplosives()) {
-			e.update(enemies);
-			e.render(batch);
-		}
-		PoolManager.instance().clearExplosives();
+		GameObjectManager.instance().renderExplosives(batch, enemies);
 		
 		// Update and draw effects:
-		for (int i = effects.size - 1; i >= 0; i--) {
-			PooledEffect effect = effects.get(i);
-			effect.draw(batch, Gdx.graphics.getDeltaTime());
-			if (effect.isComplete()) {
-				effect.free();
-				effects.removeIndex(i);
-			}
-		}
-		
-		// Update and draw effects:
-		for (int i = explosionEffects.size - 1; i >= 0; i--) {
-			PooledEffect effect = explosionEffects.get(i);
-			effect.draw(batch, Gdx.graphics.getDeltaTime());
-			if (effect.isComplete()) {
-				effect.free();
-				effects.removeIndex(i);
-			}
-		}		
+		EffectsManager.instance().renderEffects(batch);
 		
 		renderHUD(batch);
 		batch.end();
@@ -241,7 +177,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 			e.postRender(shapeRenderer);
 		}
 
-		for (Projectile p : PoolManager.instance().getBullets()) {
+		for (Projectile p : GameObjectManager.instance().getBullets()) {
 			p.postRender(shapeRenderer);
 		}
 
@@ -270,10 +206,9 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		font.draw(batch, "TRG: " + MathUtils.round(player.getTarget().x) + ":" + MathUtils.round(player.getTarget().y), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "POS: " + MathUtils.round(player.getPosition().x) + ":" + MathUtils.round(player.getPosition().y), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "CAM: " + MathUtils.round(camera.position.x) + ":" + MathUtils.round(camera.position.y), screen.x, screen.y - (lines*15)); 	lines++;
-		font.draw(batch, "CLK: " + MathUtils.round(click.x) + ":" + MathUtils.round(click.y), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "ENM: " + enemies.size(), screen.x, screen.y - (lines*15)); 	lines++;
-		font.draw(batch, "PRJ: " + PoolManager.instance().getBullets().size(), screen.x, screen.y - (lines*15)); 	lines++;
-		font.draw(batch, "BLM: " + bloodmarks.size(), screen.x, screen.y - (lines*15)); 	lines++;
+		font.draw(batch, "PRJ: " + GameObjectManager.instance().getBullets().size(), screen.x, screen.y - (lines*15)); 	lines++;
+		font.draw(batch, "BLM: " + MarksManager.instance().getMarks().size(), screen.x, screen.y - (lines*15)); 	lines++;
 
 		batch.end();
 
@@ -325,8 +260,8 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-		click = new Vector3(screenX, screenY, 0f);
-		camera.unproject(click);
+//		click = new Vector3(screenX, screenY, 0f);
+//		camera.unproject(click);
 		return false;
 	}
 
