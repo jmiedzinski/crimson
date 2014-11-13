@@ -9,8 +9,9 @@ import zbk.fun.crimson.entity.Projectile;
 import zbk.fun.crimson.entity.Weapon;
 import zbk.fun.crimson.enums.WeaponType;
 import zbk.fun.crimson.utils.EffectsManager;
-import zbk.fun.crimson.utils.GameObjectManager;
+import zbk.fun.crimson.utils.GameObjectsManager;
 import zbk.fun.crimson.utils.MarksManager;
+import zbk.fun.crimson.utils.NPCManager;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -51,9 +52,6 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 	float camMaxLeft, camMaxRight, camMaxTop, camMaxBottom;
 
-	List<Enemy> enemies;
-	List<Enemy> deadEnemies;
-
 	List<Weapon> weapons;
 
 	@Override
@@ -89,15 +87,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		camMaxTop = mapSize *tileSize - camera.viewportHeight / 2;
 		camMaxBottom = camera.viewportHeight / 2;
 
-
-
-		enemies = new ArrayList<Enemy>();
-		for (int i=0; i<50; i++) {
-			Enemy e = new Enemy();
-			enemies.add(e);
-		}
-		
-		deadEnemies = new ArrayList<Enemy>();
+		NPCManager.instance().populateEnemies(50);
 
 		weapons = new ArrayList<Weapon>();
 		Weapon pistol = new Weapon(WeaponType.PISTOL);
@@ -148,22 +138,13 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		}
 
 		player.render(batch);
-		for (Enemy e : enemies) {
-			if (e.life > 0f) {
-				e.update(player, enemies);
-				e.render(batch);
-			} else {
-				deadEnemies.add(e);
-			}
-		}
-		enemies.removeAll(deadEnemies);
-		deadEnemies.clear();
 
-		GameObjectManager.instance().renderBullets(batch, enemies);
+		NPCManager.instance().renderEnemies(batch, player);
+
+		GameObjectsManager.instance().renderBullets(batch);
 		
-		GameObjectManager.instance().renderExplosives(batch, enemies);
+		GameObjectsManager.instance().renderExplosives(batch);
 		
-		// Update and draw effects:
 		EffectsManager.instance().renderEffects(batch);
 		
 		renderHUD(batch);
@@ -173,11 +154,11 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		shapeRenderer.begin(ShapeType.Line);
 		shapeRenderer.setColor(Color.WHITE);
 
-		for (Enemy e : enemies) {
+		for (Enemy e : NPCManager.instance().getEnemies()) {
 			e.postRender(shapeRenderer);
 		}
 
-		for (Projectile p : GameObjectManager.instance().getBullets()) {
+		for (Projectile p : GameObjectsManager.instance().getBullets()) {
 			p.postRender(shapeRenderer);
 		}
 
@@ -206,8 +187,8 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		font.draw(batch, "TRG: " + MathUtils.round(player.getTarget().x) + ":" + MathUtils.round(player.getTarget().y), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "POS: " + MathUtils.round(player.getPosition().x) + ":" + MathUtils.round(player.getPosition().y), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "CAM: " + MathUtils.round(camera.position.x) + ":" + MathUtils.round(camera.position.y), screen.x, screen.y - (lines*15)); 	lines++;
-		font.draw(batch, "ENM: " + enemies.size(), screen.x, screen.y - (lines*15)); 	lines++;
-		font.draw(batch, "PRJ: " + GameObjectManager.instance().getBullets().size(), screen.x, screen.y - (lines*15)); 	lines++;
+		font.draw(batch, "ENM: " + NPCManager.instance().getEnemies().size(), screen.x, screen.y - (lines*15)); 	lines++;
+		font.draw(batch, "PRJ: " + GameObjectsManager.instance().getBullets().size(), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "BLM: " + MarksManager.instance().getMarks().size(), screen.x, screen.y - (lines*15)); 	lines++;
 
 		batch.end();

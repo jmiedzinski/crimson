@@ -3,7 +3,6 @@ package zbk.fun.crimson.utils;
 import java.util.ArrayList;
 import java.util.List;
 
-import zbk.fun.crimson.entity.Enemy;
 import zbk.fun.crimson.entity.Explosive;
 import zbk.fun.crimson.entity.Projectile;
 
@@ -11,9 +10,9 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.Pools;
 
-public class GameObjectManager {
+public class GameObjectsManager {
 
-	private static GameObjectManager instance;
+	private static GameObjectsManager instance;
 	
 	private Pool<Projectile> bulletPool;
 	private List<Projectile> bullets;
@@ -23,7 +22,7 @@ public class GameObjectManager {
 	private List<Explosive> explosives;
 	private List<Explosive> explosivesToRemove;
 	
-	private GameObjectManager() {
+	private GameObjectsManager() {
 		
 		this.bulletPool = Pools.get(Projectile.class);
 		this.bullets = new ArrayList<Projectile>();
@@ -34,10 +33,10 @@ public class GameObjectManager {
 		this.explosivesToRemove = new ArrayList<Explosive>();
 	}
 	
-	public static GameObjectManager instance() {
+	public static GameObjectsManager instance() {
 		
 		if (instance == null)
-			instance = new GameObjectManager();
+			instance = new GameObjectsManager();
 		return instance;
 	}
 
@@ -85,11 +84,11 @@ public class GameObjectManager {
 		return e;
 	}
 	
-	public void renderBullets(SpriteBatch batch, List<Enemy> enemies) {
+	public void renderBullets(SpriteBatch batch) {
 		
 		for (Projectile p : bullets) {
 			if (p.active) {
-				p.update(enemies);
+				p.update(NPCManager.instance().getEnemies());
 				p.render(batch);
 			} else {
 				bulletsToRemove.add(p);
@@ -98,10 +97,10 @@ public class GameObjectManager {
 		clearBullets();
 	}
 	
-	public void renderExplosives(SpriteBatch batch, List<Enemy> enemies) {
+	public void renderExplosives(SpriteBatch batch) {
 		
 		for (Explosive e : explosives) {
-			e.update(enemies);
+			e.update(NPCManager.instance().getEnemies());
 			e.render(batch);
 		}
 		clearExplosives();

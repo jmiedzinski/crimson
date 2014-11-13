@@ -5,7 +5,7 @@ import java.util.List;
 import zbk.fun.crimson.enums.ExplosiveType;
 import zbk.fun.crimson.enums.SurfacemarkType;
 import zbk.fun.crimson.utils.EffectsManager;
-import zbk.fun.crimson.utils.GameObjectManager;
+import zbk.fun.crimson.utils.GameObjectsManager;
 import zbk.fun.crimson.utils.MarksManager;
 
 import com.badlogic.gdx.Gdx;
@@ -95,7 +95,7 @@ public class Explosive implements Poolable {
 			}
 		}
 		effect();
-		GameObjectManager.instance().getExplosivesToRemove().add(this);
+		GameObjectsManager.instance().getExplosivesToRemove().add(this);
 		mark();
 	}
 	
