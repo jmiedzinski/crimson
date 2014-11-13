@@ -3,6 +3,8 @@ package zbk.fun.crimson;
 import java.util.ArrayList;
 import java.util.List;
 
+import zbk.fun.crimson.ai.RadiusProximity;
+import zbk.fun.crimson.entity.AIEnemy;
 import zbk.fun.crimson.entity.Enemy;
 import zbk.fun.crimson.entity.Player;
 import zbk.fun.crimson.entity.Projectile;
@@ -18,12 +20,17 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.ai.steer.behaviors.CollisionAvoidance;
+import com.badlogic.gdx.ai.steer.behaviors.PrioritySteering;
+import com.badlogic.gdx.ai.steer.behaviors.Wander;
+import com.badlogic.gdx.ai.steer.limiters.LinearAccelerationLimiter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.maps.tiled.TiledMap;
@@ -34,6 +41,14 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
+import com.badlogic.gdx.physics.box2d.CircleShape;
+import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.GdxRuntimeException;
 
 public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	SpriteBatch batch;
@@ -53,6 +68,12 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	float camMaxLeft, camMaxRight, camMaxTop, camMaxBottom;
 
 	List<Weapon> weapons;
+
+	World world;
+
+	Array<AIEnemy> characters;
+	RadiusProximity char0Proximity;
+	Array<RadiusProximity> proximities;
 
 	@Override
 	public void create () {
@@ -97,6 +118,47 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		Weapon machinegun = new Weapon(WeaponType.MACHINE_GUN);
 		weapons.add(machinegun);
 
+		this.world = new World(new Vector2(0, 0), true);
+		characters = new Array<AIEnemy>();
+		proximities = new Array<RadiusProximity>();
+
+		Texture tex = new Texture(Gdx.files.internal("assets/citizenzombie1.png"));
+		TextureRegion[] frames = new TextureRegion[1];
+		TextureRegion[][] tmp = TextureRegion.split(tex, tex.getWidth(), tex.getHeight());
+		frames[0] = tmp[0][0];
+
+		for (int i = 0; i < 60; i++) {
+			final AIEnemy character = createSteeringEntity(world, frames[0], false);
+			character.setMaxLinearSpeed(1.5f);
+			character.setMaxLinearAcceleration(40);
+
+			RadiusProximity proximity = new RadiusProximity(character, world, character.getBoundingRadius() * 4);
+			proximities.add(proximity);
+			if (i == 0) char0Proximity = proximity;
+			CollisionAvoidance<Vector2> collisionAvoidanceSB = new CollisionAvoidance<Vector2>(character, proximity);
+
+			Wander<Vector2> wanderSB = new Wander<Vector2>(character) //
+					// Don't use Face internally because independent facing is off
+					.setFaceEnabled(false) //
+					// We don't need a limiter supporting angular components because Face is not used
+					// No need to call setAlignTolerance, setDecelerationRadius and setTimeToTarget for the same reason
+					.setLimiter(new LinearAccelerationLimiter(30)) //
+					.setWanderOffset(60) //
+					.setWanderOrientation(10) //
+					.setWanderRadius(40) //
+					.setWanderRate(MathUtils.PI / 5);
+
+			PrioritySteering<Vector2> prioritySteeringSB = new PrioritySteering<Vector2>(character, 0.0001f);
+			prioritySteeringSB.add(collisionAvoidanceSB);
+			prioritySteeringSB.add(wanderSB);
+
+			character.setSteeringBehavior(prioritySteeringSB);
+
+			setRandomNonOverlappingPosition(character, characters, AIEnemy.pixelsToMeters(5));
+
+			characters.add(character);
+		}
+
 	}
 
 	private void moveCamera() {
@@ -119,6 +181,10 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public void render () {
+		
+		float deltaTime = Gdx.graphics.getDeltaTime();
+
+		world.step(deltaTime, 8, 3);
 
 		camera.update();
 		camBounds.set(camera.position.x - camera.viewportWidth / 2, camera.position.y - camera.viewportHeight / 2, camera.viewportWidth, camera.viewportHeight);
@@ -142,11 +208,17 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		NPCManager.instance().renderEnemies(batch, player);
 
 		GameObjectsManager.instance().renderBullets(batch);
-		
+
 		GameObjectsManager.instance().renderExplosives(batch);
-		
+
 		EffectsManager.instance().renderEffects(batch);
 		
+		for (int i = 0; i < characters.size; i++) {
+			AIEnemy character = characters.get(i);
+			character.update(deltaTime);
+			character.draw(batch);
+		}
+
 		renderHUD(batch);
 		batch.end();
 
@@ -241,8 +313,8 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-//		click = new Vector3(screenX, screenY, 0f);
-//		camera.unproject(click);
+		//		click = new Vector3(screenX, screenY, 0f);
+		//		camera.unproject(click);
 		return false;
 	}
 
@@ -268,5 +340,59 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	public boolean scrolled(int amount) {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	public AIEnemy createSteeringEntity (World world, TextureRegion region) {
+		return createSteeringEntity(world, region, false);
+	}
+
+	public AIEnemy createSteeringEntity (World world, TextureRegion region, boolean independentFacing) {
+		return createSteeringEntity(world, region, independentFacing, 1600, 1600);
+	}
+
+	public AIEnemy createSteeringEntity (World world, TextureRegion region, int posX, int posY) {
+		return createSteeringEntity(world, region, false, posX, posY);
+	}
+
+	public AIEnemy createSteeringEntity (World world, TextureRegion region, boolean independentFacing, int posX, int posY) {
+
+		CircleShape circleChape = new CircleShape();
+		circleChape.setPosition(new Vector2());
+		int radiusInPixels = (int)((region.getRegionWidth() + region.getRegionHeight()) / 4f);
+		circleChape.setRadius(AIEnemy.pixelsToMeters(radiusInPixels));
+
+		BodyDef characterBodyDef = new BodyDef();
+		characterBodyDef.position.set(AIEnemy.pixelsToMeters(posX), AIEnemy.pixelsToMeters(posY));
+		characterBodyDef.type = BodyType.DynamicBody;
+		Body characterBody = world.createBody(characterBodyDef);
+
+		FixtureDef charFixtureDef = new FixtureDef();
+		charFixtureDef.density = 1;
+		charFixtureDef.shape = circleChape;
+		charFixtureDef.filter.groupIndex = 0;
+		characterBody.createFixture(charFixtureDef);
+
+		circleChape.dispose();
+		AIEnemy e = new AIEnemy();
+		e.init(region, characterBody, independentFacing, AIEnemy.pixelsToMeters(radiusInPixels));
+		return e;
+	}
+
+	protected void setRandomNonOverlappingPosition (AIEnemy character, Array<AIEnemy> others, float minDistanceFromBoundary) {
+		int maxTries = Math.max(100, others.size * others.size); 
+		SET_NEW_POS:
+			while (--maxTries >= 0) {
+				int x = MathUtils.random(1600);
+				int y = MathUtils.random(1600);
+				float angle = MathUtils.random(-MathUtils.PI, MathUtils.PI);
+				character.body.setTransform(AIEnemy.pixelsToMeters(x), AIEnemy.pixelsToMeters(y), angle);
+				for (int i = 0; i < others.size; i++) {
+					AIEnemy other = (AIEnemy)others.get(i);
+					if (character.getPosition().dst(other.getPosition()) <= character.getBoundingRadius() + other.getBoundingRadius()
+							+ minDistanceFromBoundary) continue SET_NEW_POS;
+				}
+				return;
+			}
+		throw new GdxRuntimeException("Probable infinite loop detected");
 	}
 }
