@@ -45,7 +45,7 @@ public class WorldUtils {
 		bodyDef.position.set(px2m(Gdx.graphics.getWidth() / 2), px2m(Gdx.graphics.getHeight() / 2));
 
 		player.body = world.createBody(bodyDef);
-		float radiusInMeters = px2m((int) ((player.getWidth() + player.getHeight()) / 4f));
+		float radiusInMeters = px2m((int) ((player.getWidth() + player.getHeight()) / 3f));
 
 		// Create a circle shape and set its radius to 6
 		CircleShape circle = new CircleShape();
@@ -61,6 +61,7 @@ public class WorldUtils {
 		// Create our fixture and attach it to the body
 		Fixture fixture = player.body.createFixture(fixtureDef);
 		fixture.setSensor(true);
+		player.body.setUserData(player);
 		player.body.setTransform(px2m((int) player.position.x), px2m((int) player.position.y), player.rotation);
 
 		circle.dispose();

@@ -78,6 +78,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 	Array<Steerable<Vector2>> characters;
 	RadiusProximity char0Proximity;
+	RadiusProximity playerProximity;
 	Array<RadiusProximity> proximities;
 	
 	Box2DDebugRenderer debugRenderer;
@@ -132,7 +133,8 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		characters = new Array<Steerable<Vector2>>();
 		proximities = new Array<RadiusProximity>();
 		
-//		WorldUtils.createPlayerBody(world, player);
+		WorldUtils.createPlayerBody(world, player);
+		playerProximity = new RadiusProximity(player, world, player.getBoundingRadius() * 4);
 
 		Texture tex = new Texture(Gdx.files.internal("assets/citizenzombie1.png"));
 		TextureRegion[] frames = new TextureRegion[1];
@@ -160,13 +162,13 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 					.setWanderRadius(40) //
 					.setWanderRate(MathUtils.PI / 5);
 			
-//			Seek<Vector2> seekSB = new Seek<Vector2>(character, player);
-//			seekSB.setLimiter(new LinearAccelerationLimiter(30));
+			Seek<Vector2> seekSB = new Seek<Vector2>(character, player);
+			seekSB.setLimiter(new LinearAccelerationLimiter(30));
 			
 			PrioritySteering<Vector2> prioritySteeringSB = new PrioritySteering<Vector2>(character, 0.0001f);
 			prioritySteeringSB.add(collisionAvoidanceSB);
-			prioritySteeringSB.add(wanderSB);
-//			prioritySteeringSB.add(seekSB);
+			prioritySteeringSB.add(seekSB);
+//			prioritySteeringSB.add(wanderSB);
 
 			character.setSteeringBehavior(prioritySteeringSB);
 
@@ -209,8 +211,8 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		player.update();
 		Gdx.gl.glClearColor(0, 0, 0.2f, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-//		tiledMapRenderer.setView(camera);
-//		tiledMapRenderer.render();
+		tiledMapRenderer.setView(camera);
+		tiledMapRenderer.render();
 		batch.begin();
 
 		MarksManager.instance().renderMarks(batch);
@@ -274,7 +276,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 		int lines = 0;
 		font.draw(batch, "TRG: " + MathUtils.round(player.getTarget().x) + ":" + MathUtils.round(player.getTarget().y), screen.x, screen.y - (lines*15)); 	lines++;
-		font.draw(batch, "POS: " + MathUtils.round(player.getPosition().x) + ":" + MathUtils.round(player.getPosition().y), screen.x, screen.y - (lines*15)); 	lines++;
+		font.draw(batch, "POS: " + WorldUtils.m2px(player.body.getPosition().x) + ":" + WorldUtils.m2px(player.body.getPosition().y), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "CAM: " + MathUtils.round(camera.position.x) + ":" + MathUtils.round(camera.position.y), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "ENM: " + NPCManager.instance().getEnemies().size(), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "PRJ: " + GameObjectsManager.instance().getBullets().size(), screen.x, screen.y - (lines*15)); 	lines++;

@@ -117,7 +117,7 @@ public class Player implements InputProcessor, Steerable<Vector2> {
 		bbox = new Rectangle(position.x-25, position.y-25, 50, 50);
 		weapons = new LinkedList<Weapon>();
 		
-		this.boundingRadius = (width + height) / 2;
+		this.boundingRadius = WorldUtils.px2m((width + height) / 2);
 		this.tagged = false;
 	}
 
@@ -139,7 +139,7 @@ public class Player implements InputProcessor, Steerable<Vector2> {
 			moving = false;
 		}
 		bbox.set(position.x-25, position.y-25, 50, 50);
-//		body.setTransform(WorldUtils.px2m((int) position.x), WorldUtils.px2m((int) position.y), rotation);
+		body.setTransform(WorldUtils.px2m((int) position.x), WorldUtils.px2m((int) position.y), rotation);
 
 	}
 
@@ -249,7 +249,7 @@ public class Player implements InputProcessor, Steerable<Vector2> {
 	}
 
 	public Vector2 getPosition() {
-		return position;
+		return body.getPosition();
 	}
 
 	public Vector2 getDirection() {
