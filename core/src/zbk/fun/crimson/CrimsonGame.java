@@ -14,14 +14,18 @@ import zbk.fun.crimson.utils.EffectsManager;
 import zbk.fun.crimson.utils.GameObjectsManager;
 import zbk.fun.crimson.utils.MarksManager;
 import zbk.fun.crimson.utils.NPCManager;
+import zbk.fun.crimson.utils.WorldUtils;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.ai.steer.Steerable;
 import com.badlogic.gdx.ai.steer.behaviors.CollisionAvoidance;
 import com.badlogic.gdx.ai.steer.behaviors.PrioritySteering;
+import com.badlogic.gdx.ai.steer.behaviors.Pursue;
+import com.badlogic.gdx.ai.steer.behaviors.Seek;
 import com.badlogic.gdx.ai.steer.behaviors.Wander;
 import com.badlogic.gdx.ai.steer.limiters.LinearAccelerationLimiter;
 import com.badlogic.gdx.graphics.Color;
@@ -44,6 +48,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
+import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.World;
@@ -71,12 +76,17 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 	World world;
 
-	Array<AIEnemy> characters;
+	Array<Steerable<Vector2>> characters;
 	RadiusProximity char0Proximity;
 	Array<RadiusProximity> proximities;
+	
+	Box2DDebugRenderer debugRenderer;
 
 	@Override
 	public void create () {
+		
+		debugRenderer = new Box2DDebugRenderer();
+		
 		batch = new SpriteBatch();
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, 800, 600);
@@ -119,8 +129,10 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		weapons.add(machinegun);
 
 		this.world = new World(new Vector2(0, 0), true);
-		characters = new Array<AIEnemy>();
+		characters = new Array<Steerable<Vector2>>();
 		proximities = new Array<RadiusProximity>();
+		
+//		WorldUtils.createPlayerBody(world, player);
 
 		Texture tex = new Texture(Gdx.files.internal("assets/citizenzombie1.png"));
 		TextureRegion[] frames = new TextureRegion[1];
@@ -128,7 +140,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		frames[0] = tmp[0][0];
 
 		for (int i = 0; i < 60; i++) {
-			final AIEnemy character = createSteeringEntity(world, frames[0], false);
+			final AIEnemy character = WorldUtils.createNPC(world, frames[0], false);
 			character.setMaxLinearSpeed(1.5f);
 			character.setMaxLinearAcceleration(40);
 
@@ -147,14 +159,18 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 					.setWanderOrientation(10) //
 					.setWanderRadius(40) //
 					.setWanderRate(MathUtils.PI / 5);
-
+			
+//			Seek<Vector2> seekSB = new Seek<Vector2>(character, player);
+//			seekSB.setLimiter(new LinearAccelerationLimiter(30));
+			
 			PrioritySteering<Vector2> prioritySteeringSB = new PrioritySteering<Vector2>(character, 0.0001f);
 			prioritySteeringSB.add(collisionAvoidanceSB);
 			prioritySteeringSB.add(wanderSB);
+//			prioritySteeringSB.add(seekSB);
 
 			character.setSteeringBehavior(prioritySteeringSB);
 
-			setRandomNonOverlappingPosition(character, characters, AIEnemy.pixelsToMeters(5));
+			WorldUtils.setRandomNonOverlappingPosition(character, characters, AIEnemy.pixelsToMeters(5));
 
 			characters.add(character);
 		}
@@ -185,6 +201,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		float deltaTime = Gdx.graphics.getDeltaTime();
 
 		world.step(deltaTime, 8, 3);
+		debugRenderer.render(world, camera.combined);
 
 		camera.update();
 		camBounds.set(camera.position.x - camera.viewportWidth / 2, camera.position.y - camera.viewportHeight / 2, camera.viewportWidth, camera.viewportHeight);
@@ -192,8 +209,8 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		player.update();
 		Gdx.gl.glClearColor(0, 0, 0.2f, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		tiledMapRenderer.setView(camera);
-		tiledMapRenderer.render();
+//		tiledMapRenderer.setView(camera);
+//		tiledMapRenderer.render();
 		batch.begin();
 
 		MarksManager.instance().renderMarks(batch);
@@ -205,44 +222,44 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 		player.render(batch);
 
-		NPCManager.instance().renderEnemies(batch, player);
+//		NPCManager.instance().renderEnemies(batch, player);
 
-		GameObjectsManager.instance().renderBullets(batch);
+//		GameObjectsManager.instance().renderBullets(batch);
 
-		GameObjectsManager.instance().renderExplosives(batch);
+//		GameObjectsManager.instance().renderExplosives(batch);
 
-		EffectsManager.instance().renderEffects(batch);
+//		EffectsManager.instance().renderEffects(batch);
 		
 		for (int i = 0; i < characters.size; i++) {
-			AIEnemy character = characters.get(i);
+			AIEnemy character = (AIEnemy)characters.get(i);
 			character.update(deltaTime);
 			character.draw(batch);
 		}
 
-		renderHUD(batch);
+//		renderHUD(batch);
 		batch.end();
 
-		shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
-		shapeRenderer.begin(ShapeType.Line);
-		shapeRenderer.setColor(Color.WHITE);
-
-		for (Enemy e : NPCManager.instance().getEnemies()) {
-			e.postRender(shapeRenderer);
-		}
-
-		for (Projectile p : GameObjectsManager.instance().getBullets()) {
-			p.postRender(shapeRenderer);
-		}
-
-		shapeRenderer.rect(player.getBbox().x, player.getBbox().y, player.getBbox().width, player.getBbox().height);
-
-		shapeRenderer.setColor(Color.RED);
-		shapeRenderer.circle(player.getTarget().x, player.getTarget().y, 10);
-		shapeRenderer.setColor(Color.YELLOW);
-		shapeRenderer.line(player.getPosition().x, player.getPosition().y, player.getTarget().x, player.getTarget().y);
-		shapeRenderer.setColor(Color.CYAN);
-		shapeRenderer.line(player.getPosition().x, player.getPosition().y, camera.position.x, camera.position.y);
-		shapeRenderer.end();
+//		shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
+//		shapeRenderer.begin(ShapeType.Line);
+//		shapeRenderer.setColor(Color.WHITE);
+//
+//		for (Enemy e : NPCManager.instance().getEnemies()) {
+//			e.postRender(shapeRenderer);
+//		}
+//
+//		for (Projectile p : GameObjectsManager.instance().getBullets()) {
+//			p.postRender(shapeRenderer);
+//		}
+//
+//		shapeRenderer.rect(player.getBbox().x, player.getBbox().y, player.getBbox().width, player.getBbox().height);
+//
+//		shapeRenderer.setColor(Color.RED);
+//		shapeRenderer.circle(player.getTarget().x, player.getTarget().y, 10);
+//		shapeRenderer.setColor(Color.YELLOW);
+//		shapeRenderer.line(player.getPosition().x, player.getPosition().y, player.getTarget().x, player.getTarget().y);
+//		shapeRenderer.setColor(Color.CYAN);
+//		shapeRenderer.line(player.getPosition().x, player.getPosition().y, camera.position.x, camera.position.y);
+//		shapeRenderer.end();
 
 		if (!mapBounds.contains(player.getBbox())) {
 			player.stop();
@@ -342,57 +359,5 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		return false;
 	}
 
-	public AIEnemy createSteeringEntity (World world, TextureRegion region) {
-		return createSteeringEntity(world, region, false);
-	}
 
-	public AIEnemy createSteeringEntity (World world, TextureRegion region, boolean independentFacing) {
-		return createSteeringEntity(world, region, independentFacing, 1600, 1600);
-	}
-
-	public AIEnemy createSteeringEntity (World world, TextureRegion region, int posX, int posY) {
-		return createSteeringEntity(world, region, false, posX, posY);
-	}
-
-	public AIEnemy createSteeringEntity (World world, TextureRegion region, boolean independentFacing, int posX, int posY) {
-
-		CircleShape circleChape = new CircleShape();
-		circleChape.setPosition(new Vector2());
-		int radiusInPixels = (int)((region.getRegionWidth() + region.getRegionHeight()) / 4f);
-		circleChape.setRadius(AIEnemy.pixelsToMeters(radiusInPixels));
-
-		BodyDef characterBodyDef = new BodyDef();
-		characterBodyDef.position.set(AIEnemy.pixelsToMeters(posX), AIEnemy.pixelsToMeters(posY));
-		characterBodyDef.type = BodyType.DynamicBody;
-		Body characterBody = world.createBody(characterBodyDef);
-
-		FixtureDef charFixtureDef = new FixtureDef();
-		charFixtureDef.density = 1;
-		charFixtureDef.shape = circleChape;
-		charFixtureDef.filter.groupIndex = 0;
-		characterBody.createFixture(charFixtureDef);
-
-		circleChape.dispose();
-		AIEnemy e = new AIEnemy();
-		e.init(region, characterBody, independentFacing, AIEnemy.pixelsToMeters(radiusInPixels));
-		return e;
-	}
-
-	protected void setRandomNonOverlappingPosition (AIEnemy character, Array<AIEnemy> others, float minDistanceFromBoundary) {
-		int maxTries = Math.max(100, others.size * others.size); 
-		SET_NEW_POS:
-			while (--maxTries >= 0) {
-				int x = MathUtils.random(1600);
-				int y = MathUtils.random(1600);
-				float angle = MathUtils.random(-MathUtils.PI, MathUtils.PI);
-				character.body.setTransform(AIEnemy.pixelsToMeters(x), AIEnemy.pixelsToMeters(y), angle);
-				for (int i = 0; i < others.size; i++) {
-					AIEnemy other = (AIEnemy)others.get(i);
-					if (character.getPosition().dst(other.getPosition()) <= character.getBoundingRadius() + other.getBoundingRadius()
-							+ minDistanceFromBoundary) continue SET_NEW_POS;
-				}
-				return;
-			}
-		throw new GdxRuntimeException("Probable infinite loop detected");
-	}
 }

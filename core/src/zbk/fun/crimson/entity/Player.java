@@ -5,11 +5,13 @@ import java.util.List;
 
 import zbk.fun.crimson.enums.ExplosiveType;
 import zbk.fun.crimson.utils.GameObjectsManager;
+import zbk.fun.crimson.utils.WorldUtils;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.ai.steer.Steerable;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
@@ -21,8 +23,9 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.box2d.Body;
 
-public class Player implements InputProcessor {
+public class Player implements InputProcessor, Steerable<Vector2> {
 
 	public static final int weaponSlots = 3;
 
@@ -40,7 +43,7 @@ public class Player implements InputProcessor {
 	public Vector2 position;
 	public Vector2 direction;
 	public Vector2 target;
-	private float rotation;
+	public float rotation;
 
 	private TextureRegion[] frames;
 	private Animation animation;
@@ -60,6 +63,20 @@ public class Player implements InputProcessor {
 
 	public Weapon currentWeapon;
 	public int currWeaponIndex = -1;
+	
+	public Body body;
+
+	private float maxLinerSpeed;
+
+	private float maxLinearAcceleration;
+
+	private float maxAngularSpeed;
+
+	private float maxAngularAcceleration;
+
+	private float boundingRadius;
+	
+	private boolean tagged;
 
 	public Player(OrthographicCamera camera, int width, int height, int rows, int cols, Texture texture, float animSpeed) {
 
@@ -99,6 +116,9 @@ public class Player implements InputProcessor {
 		moving = false;
 		bbox = new Rectangle(position.x-25, position.y-25, 50, 50);
 		weapons = new LinkedList<Weapon>();
+		
+		this.boundingRadius = (width + height) / 2;
+		this.tagged = false;
 	}
 
 	public void update() {
@@ -119,6 +139,7 @@ public class Player implements InputProcessor {
 			moving = false;
 		}
 		bbox.set(position.x-25, position.y-25, 50, 50);
+//		body.setTransform(WorldUtils.px2m((int) position.x), WorldUtils.px2m((int) position.y), rotation);
 
 	}
 
@@ -289,6 +310,93 @@ public class Player implements InputProcessor {
 			currentWeapon = weapons.get(currWeaponIndex);
 		}
 
+	}
+
+	@Override
+	public float getMaxLinearSpeed() {
+		return maxLinerSpeed;
+	}
+
+	@Override
+	public void setMaxLinearSpeed(float maxLinearSpeed) {
+		this.maxLinerSpeed = maxLinearSpeed;
+	}
+
+	@Override
+	public float getMaxLinearAcceleration() {
+		return maxLinearAcceleration;
+	}
+
+	@Override
+	public void setMaxLinearAcceleration(float maxLinearAcceleration) {
+		this.maxLinearAcceleration = maxLinearAcceleration;
+	}
+
+	@Override
+	public float getMaxAngularSpeed() {
+		return maxAngularSpeed;
+	}
+
+	@Override
+	public void setMaxAngularSpeed(float maxAngularSpeed) {
+		this.maxAngularSpeed = maxAngularSpeed;
+	}
+
+	@Override
+	public float getMaxAngularAcceleration() {
+		return maxAngularAcceleration;
+	}
+
+	@Override
+	public void setMaxAngularAcceleration(float maxAngularAcceleration) {
+		this.maxAngularAcceleration = maxAngularAcceleration;
+	}
+
+	@Override
+	public Vector2 getLinearVelocity() {
+		return body.getLinearVelocity();
+	}
+
+	@Override
+	public float getAngularVelocity() {
+		return body.getAngularVelocity();
+	}
+
+	@Override
+	public float getBoundingRadius() {
+		return boundingRadius;
+	}
+
+	@Override
+	public boolean isTagged() {
+		return tagged;
+	}
+
+	@Override
+	public void setTagged(boolean tagged) {
+		this.tagged = tagged;
+	}
+
+	@Override
+	public Vector2 newVector() {
+		return new Vector2();
+	}
+
+	@Override
+	public float vectorToAngle (Vector2 vector) {
+		return (float)Math.atan2(-vector.x, vector.y);
+	}
+
+	@Override
+	public Vector2 angleToVector (Vector2 outVector, float angle) {
+		outVector.x = -(float)Math.sin(angle);
+		outVector.y = (float)Math.cos(angle);
+		return outVector;
+	}
+
+	@Override
+	public float getOrientation() {
+		return body.getAngle();
 	}
 
 

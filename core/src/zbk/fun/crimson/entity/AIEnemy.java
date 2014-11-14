@@ -33,14 +33,10 @@ public class AIEnemy implements Steerable<Vector2> {
 		
 	}
 	
-	public void init(TextureRegion region, Body body, boolean independentFacing, float boundingRadius) {
+	public void init(TextureRegion region, boolean independentFacing) {
 		this.region = region;
-		this.body = body;
 		this.independentFacing = independentFacing;
-		this.boundingRadius = boundingRadius;
 		this.tagged = false;
-		
-		body.setUserData(this);
 	}
 	
 	public TextureRegion getRegion () {
@@ -57,6 +53,8 @@ public class AIEnemy implements Steerable<Vector2> {
 
 	public void setBody (Body body) {
 		this.body = body;
+		this.body.setUserData(this);
+		this.boundingRadius = body.getFixtureList().get(0).getShape().getRadius();
 	}
 
 	public boolean isIndependentFacing () {
@@ -144,7 +142,7 @@ public class AIEnemy implements Steerable<Vector2> {
 			applySteering(steeringOutput, deltaTime);
 		}
 
-		wrapAround(pixelsToMeters(Gdx.graphics.getWidth()),	pixelsToMeters(Gdx.graphics.getHeight()));
+		wrapAround(pixelsToMeters(1600), pixelsToMeters(1600));
 	}
 
 	protected void applySteering (SteeringAcceleration<Vector2> steering, float deltaTime) {
@@ -229,6 +227,7 @@ public class AIEnemy implements Steerable<Vector2> {
 			w, h, //
 			1, 1, //
 			body.getAngle() * MathUtils.radiansToDegrees); //
+		
 	}
 
 	//
