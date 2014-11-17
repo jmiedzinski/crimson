@@ -7,8 +7,10 @@ import zbk.fun.crimson.enums.SurfacemarkType;
 import zbk.fun.crimson.utils.EffectsManager;
 import zbk.fun.crimson.utils.GameObjectsManager;
 import zbk.fun.crimson.utils.MarksManager;
+import zbk.fun.crimson.utils.WorldUtils;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.ai.steer.Steerable;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect;
@@ -16,6 +18,7 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool.Poolable;
 
 public class Explosive implements Poolable {
@@ -62,7 +65,7 @@ public class Explosive implements Poolable {
 		sprite.setOriginCenter();
 	}
 	
-	public void update(List<Enemy> enemies) {
+	public void update(Array<Steerable<Vector2>> enemies) {
 		
 		boolean explode = false;
 		time -= Gdx.graphics.getDeltaTime();
@@ -75,8 +78,9 @@ public class Explosive implements Poolable {
 				explode = true;
 			}
 		} else {
-			for (Enemy e : enemies) {
-				if (e.position.dst(position) <= 20f) {
+			for (int i = 0; i < enemies.size; i++) {
+				Enemy e = (Enemy) enemies.get(i);
+				if (e.getPosition().dst(position) <= 20f) {
 					explode = true;
 					break;
 				}
@@ -87,11 +91,14 @@ public class Explosive implements Poolable {
 			explode(enemies);
 	}
 	
-	private void explode(List<Enemy> enemies) {
+	private void explode(Array<Steerable<Vector2>> enemies) {
 		
-		for (Enemy e : enemies) {
-			if (e.position.dst(position) <= type.getRange()) {
+		for (int i = 0; i < enemies.size; i++) {
+			Enemy e = (Enemy) enemies.get(i);
+			Vector2 enemyPos = new Vector2(WorldUtils.m2px(e.getPosition().x), WorldUtils.m2px(e.getPosition().y));
+			if (enemyPos.dst(position) <= type.getRange()) {
 				e.life -= type.getDamage();
+				e.body.applyForceToCenter(enemyPos.sub(position).nor().scl(100f), true);
 			}
 		}
 		effect();

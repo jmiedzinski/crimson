@@ -7,6 +7,7 @@ import zbk.fun.crimson.utils.EffectsManager;
 import zbk.fun.crimson.utils.MarksManager;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.ai.steer.Steerable;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
@@ -15,6 +16,8 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool.Poolable;
 
 public class Projectile implements Poolable{
@@ -39,6 +42,8 @@ public class Projectile implements Poolable{
 	private int height;
 
 	public boolean active;
+	
+	public Body body;
 	
 	public Projectile() {
 		
@@ -76,7 +81,7 @@ public class Projectile implements Poolable{
 		this.active = true;
 	}
 
-	public void update(List<Enemy> enemies) {
+	public void update(Array<Steerable<Vector2>> enemies) {
 
 		if (active) {
 			time += Gdx.graphics.getDeltaTime();
@@ -91,15 +96,16 @@ public class Projectile implements Poolable{
 			if (distance > maxDistance)
 				active = false;
 			
-			for (Enemy e : enemies) {
+			for (int i = 0; i < enemies.size; i++) {
 				
-				if (bbox.overlaps(e.bbox)) {
-					e.life -= damage;
-					e.effect(this);
-					Surfacemark mark = MarksManager.instance().getMark();
-					mark.init(SurfacemarkType.BLOODMARK, position.cpy(), rotation);
-					active = false;
-				}
+				Enemy e = (Enemy) enemies.get(i);
+//				if (bbox.overlaps(e.bbox)) {
+//					e.life -= damage;
+//					e.effect(this);
+//					Surfacemark mark = MarksManager.instance().getMark();
+//					mark.init(SurfacemarkType.BLOODMARK, position.cpy(), rotation);
+//					active = false;
+//				}
 			}
 		}
 	}

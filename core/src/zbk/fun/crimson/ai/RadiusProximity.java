@@ -1,6 +1,6 @@
 package zbk.fun.crimson.ai;
 
-import zbk.fun.crimson.entity.AIEnemy;
+import zbk.fun.crimson.entity.Enemy;
 
 import com.badlogic.gdx.ai.steer.Steerable;
 import com.badlogic.gdx.math.Vector2;
@@ -22,7 +22,7 @@ public class RadiusProximity extends AABBProximity {
 	protected boolean accept (Steerable<Vector2> steerable) {
 		// The bounding radius of the current body is taken into account
 		// by adding it to the radius proximity
-		if (steerable instanceof AIEnemy) {
+		if (steerable instanceof Enemy) {
 			float range = detectionRadius + steerable.getBoundingRadius();
 
 			// Make sure the current body is within the range.

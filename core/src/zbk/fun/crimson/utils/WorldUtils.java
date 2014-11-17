@@ -1,7 +1,9 @@
 package zbk.fun.crimson.utils;
 
-import zbk.fun.crimson.entity.AIEnemy;
+import zbk.fun.crimson.entity.Enemy;
 import zbk.fun.crimson.entity.Player;
+import zbk.fun.crimson.entity.Projectile;
+import zbk.fun.crimson.enums.NPCType;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ai.steer.Steerable;
@@ -68,12 +70,35 @@ public class WorldUtils {
 		
 	}
 	
-	public static void createNPCBody(World world, AIEnemy enemy) {
+	public static void createBulletBody(World world, Player player, Projectile bullet) {
+		
+		BodyDef bodyDef = new BodyDef();
+		bodyDef.type = BodyType.DynamicBody;
+		bodyDef.position.set(player.getPosition().cpy());
+		
+		bullet.body = world.createBody(bodyDef);
+		
+		CircleShape circle = new CircleShape();
+		circle.setRadius(0.05f);
+		
+		FixtureDef fixtureDef = new FixtureDef();
+		fixtureDef.shape = circle;
+		fixtureDef.density = 1f; 
+		fixtureDef.friction = 0.4f;
+		fixtureDef.restitution = 0f;
+		
+		player.body.createFixture(fixtureDef);
+		bullet.body.setUserData(bullet);
+		
+		circle.dispose();
+	}
+	
+	public static void createNPCBody(World world, Enemy enemy) {
 		
 		CircleShape circleChape = new CircleShape();
 		circleChape.setPosition(new Vector2());
 		int radiusInPixels = (int)((enemy.getRegion().getRegionWidth() + enemy.getRegion().getRegionHeight()) / 4f);
-		circleChape.setRadius(AIEnemy.pixelsToMeters(radiusInPixels));
+		circleChape.setRadius(pixelsToMeters(radiusInPixels));
 
 		BodyDef characterBodyDef = new BodyDef();
 		characterBodyDef.position.set(px2m(MathUtils.random(1600)), px2m(MathUtils.random(1600)));
@@ -90,28 +115,28 @@ public class WorldUtils {
 		enemy.setBody(characterBody);
 	}
 	
-	public static AIEnemy createNPC (World world, TextureRegion region) {
-		return createNPC(world, region, false);
+	public static Enemy createNPC (World world, TextureRegion region, NPCType type) {
+		return createNPC(world, region, false, type);
 	}
 
-	public static AIEnemy createNPC (World world, TextureRegion region, boolean independentFacing) {
+	public static Enemy createNPC (World world, TextureRegion region, boolean independentFacing, NPCType type) {
 
-		AIEnemy e = new AIEnemy();
-		e.init(region, independentFacing);
+		Enemy e = new Enemy();
+		e.init(type, region, independentFacing);
 		WorldUtils.createNPCBody(world, e);
 		return e;
 	}
 
-	public static void setRandomNonOverlappingPosition (AIEnemy character, Array<Steerable<Vector2>> others, float minDistanceFromBoundary) {
+	public static void setRandomNonOverlappingPosition (Enemy character, Array<Steerable<Vector2>> others, float minDistanceFromBoundary) {
 		int maxTries = Math.max(100, others.size * others.size); 
 		SET_NEW_POS:
 			while (--maxTries >= 0) {
 				int x = (int) MathUtils.random(1600);
 				int y = (int) MathUtils.random(1600);
 				float angle = MathUtils.random(-MathUtils.PI, MathUtils.PI);
-				character.body.setTransform(AIEnemy.pixelsToMeters(x), AIEnemy.pixelsToMeters(y), angle);
+				character.body.setTransform(pixelsToMeters(x), pixelsToMeters(y), angle);
 				for (int i = 0; i < others.size; i++) {
-					AIEnemy other = (AIEnemy)others.get(i);
+					Enemy other = (Enemy)others.get(i);
 					if (character.getPosition().dst(other.getPosition()) <= character.getBoundingRadius() + other.getBoundingRadius()
 							+ minDistanceFromBoundary) continue SET_NEW_POS;
 				}

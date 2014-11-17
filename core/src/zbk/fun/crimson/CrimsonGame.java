@@ -3,11 +3,7 @@ package zbk.fun.crimson;
 import java.util.ArrayList;
 import java.util.List;
 
-import zbk.fun.crimson.ai.RadiusProximity;
-import zbk.fun.crimson.entity.AIEnemy;
-import zbk.fun.crimson.entity.Enemy;
 import zbk.fun.crimson.entity.Player;
-import zbk.fun.crimson.entity.Projectile;
 import zbk.fun.crimson.entity.Weapon;
 import zbk.fun.crimson.enums.WeaponType;
 import zbk.fun.crimson.utils.EffectsManager;
@@ -21,22 +17,12 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.ai.steer.Steerable;
-import com.badlogic.gdx.ai.steer.behaviors.CollisionAvoidance;
-import com.badlogic.gdx.ai.steer.behaviors.PrioritySteering;
-import com.badlogic.gdx.ai.steer.behaviors.Pursue;
-import com.badlogic.gdx.ai.steer.behaviors.Seek;
-import com.badlogic.gdx.ai.steer.behaviors.Wander;
-import com.badlogic.gdx.ai.steer.limiters.LinearAccelerationLimiter;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
@@ -45,15 +31,8 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.BodyDef;
-import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
-import com.badlogic.gdx.physics.box2d.CircleShape;
-import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.World;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.GdxRuntimeException;
 
 public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	SpriteBatch batch;
@@ -76,11 +55,6 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 	World world;
 
-	Array<Steerable<Vector2>> characters;
-	RadiusProximity char0Proximity;
-	RadiusProximity playerProximity;
-	Array<RadiusProximity> proximities;
-	
 	Box2DDebugRenderer debugRenderer;
 
 	@Override
@@ -119,8 +93,6 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		camMaxTop = mapSize *tileSize - camera.viewportHeight / 2;
 		camMaxBottom = camera.viewportHeight / 2;
 
-		NPCManager.instance().populateEnemies(50);
-
 		weapons = new ArrayList<Weapon>();
 		Weapon pistol = new Weapon(WeaponType.PISTOL);
 		weapons.add(pistol);
@@ -130,52 +102,9 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		weapons.add(machinegun);
 
 		this.world = new World(new Vector2(0, 0), true);
-		characters = new Array<Steerable<Vector2>>();
-		proximities = new Array<RadiusProximity>();
 		
 		WorldUtils.createPlayerBody(world, player);
-		playerProximity = new RadiusProximity(player, world, player.getBoundingRadius() * 4);
-
-		Texture tex = new Texture(Gdx.files.internal("assets/citizenzombie1.png"));
-		TextureRegion[] frames = new TextureRegion[1];
-		TextureRegion[][] tmp = TextureRegion.split(tex, tex.getWidth(), tex.getHeight());
-		frames[0] = tmp[0][0];
-
-		for (int i = 0; i < 60; i++) {
-			final AIEnemy character = WorldUtils.createNPC(world, frames[0], false);
-			character.setMaxLinearSpeed(1.5f);
-			character.setMaxLinearAcceleration(40);
-
-			RadiusProximity proximity = new RadiusProximity(character, world, character.getBoundingRadius() * 4);
-			proximities.add(proximity);
-			if (i == 0) char0Proximity = proximity;
-			CollisionAvoidance<Vector2> collisionAvoidanceSB = new CollisionAvoidance<Vector2>(character, proximity);
-
-			Wander<Vector2> wanderSB = new Wander<Vector2>(character) //
-					// Don't use Face internally because independent facing is off
-					.setFaceEnabled(false) //
-					// We don't need a limiter supporting angular components because Face is not used
-					// No need to call setAlignTolerance, setDecelerationRadius and setTimeToTarget for the same reason
-					.setLimiter(new LinearAccelerationLimiter(30)) //
-					.setWanderOffset(60) //
-					.setWanderOrientation(10) //
-					.setWanderRadius(40) //
-					.setWanderRate(MathUtils.PI / 5);
-			
-			Seek<Vector2> seekSB = new Seek<Vector2>(character, player);
-			seekSB.setLimiter(new LinearAccelerationLimiter(30));
-			
-			PrioritySteering<Vector2> prioritySteeringSB = new PrioritySteering<Vector2>(character, 0.0001f);
-			prioritySteeringSB.add(collisionAvoidanceSB);
-			prioritySteeringSB.add(seekSB);
-//			prioritySteeringSB.add(wanderSB);
-
-			character.setSteeringBehavior(prioritySteeringSB);
-
-			WorldUtils.setRandomNonOverlappingPosition(character, characters, AIEnemy.pixelsToMeters(5));
-
-			characters.add(character);
-		}
+		NPCManager.instance().populateEnemies(world, player, 50);
 
 	}
 
@@ -224,20 +153,14 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 		player.render(batch);
 
-//		NPCManager.instance().renderEnemies(batch, player);
+		NPCManager.instance().renderEnemies(batch, deltaTime);
 
 //		GameObjectsManager.instance().renderBullets(batch);
 
-//		GameObjectsManager.instance().renderExplosives(batch);
+		GameObjectsManager.instance().renderExplosives(batch);
 
-//		EffectsManager.instance().renderEffects(batch);
+		EffectsManager.instance().renderEffects(batch);
 		
-		for (int i = 0; i < characters.size; i++) {
-			AIEnemy character = (AIEnemy)characters.get(i);
-			character.update(deltaTime);
-			character.draw(batch);
-		}
-
 //		renderHUD(batch);
 		batch.end();
 
@@ -278,7 +201,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		font.draw(batch, "TRG: " + MathUtils.round(player.getTarget().x) + ":" + MathUtils.round(player.getTarget().y), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "POS: " + WorldUtils.m2px(player.body.getPosition().x) + ":" + WorldUtils.m2px(player.body.getPosition().y), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "CAM: " + MathUtils.round(camera.position.x) + ":" + MathUtils.round(camera.position.y), screen.x, screen.y - (lines*15)); 	lines++;
-		font.draw(batch, "ENM: " + NPCManager.instance().getEnemies().size(), screen.x, screen.y - (lines*15)); 	lines++;
+		font.draw(batch, "ENM: " + NPCManager.instance().getEnemies().size, screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "PRJ: " + GameObjectsManager.instance().getBullets().size(), screen.x, screen.y - (lines*15)); 	lines++;
 		font.draw(batch, "BLM: " + MarksManager.instance().getMarks().size(), screen.x, screen.y - (lines*15)); 	lines++;
 
