@@ -1,10 +1,6 @@
 package zbk.fun.crimson.entity;
 
-import java.util.List;
-
-import zbk.fun.crimson.enums.SurfacemarkType;
-import zbk.fun.crimson.utils.EffectsManager;
-import zbk.fun.crimson.utils.MarksManager;
+import zbk.fun.crimson.utils.WorldUtils;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ai.steer.Steerable;
@@ -20,7 +16,7 @@ import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool.Poolable;
 
-public class Projectile implements Poolable{
+public class Projectile implements Poolable {
 
 	public Vector2 startPoint;
 	public Vector2 position;
@@ -90,15 +86,16 @@ public class Projectile implements Poolable{
 			position.y += speed * Math.sin(MathUtils.degreesToRadians * direction.angle());
 			this.sprite.setCenter(this.position.x, this.position.y);
 			this.sprite.setOriginCenter();
-			bbox.set(position.x - width / 2, position.y - height / 2, width, height);
+			
+			body.setTransform(WorldUtils.px2m((int) position.x), WorldUtils.px2m((int) position.y), direction.angle());
 			
 			this.distance = (float) Math.sqrt(Math.pow(position.x - startPoint.x, 2) + Math.pow(position.y - startPoint.y, 2));
 			if (distance > maxDistance)
 				active = false;
 			
-			for (int i = 0; i < enemies.size; i++) {
-				
-				Enemy e = (Enemy) enemies.get(i);
+//			for (int i = 0; i < enemies.size; i++) {
+//				
+//				Enemy e = (Enemy) enemies.get(i);
 //				if (bbox.overlaps(e.bbox)) {
 //					e.life -= damage;
 //					e.effect(this);
@@ -106,7 +103,7 @@ public class Projectile implements Poolable{
 //					mark.init(SurfacemarkType.BLOODMARK, position.cpy(), rotation);
 //					active = false;
 //				}
-			}
+//			}
 		}
 	}
 

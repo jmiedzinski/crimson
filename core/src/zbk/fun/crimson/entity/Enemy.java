@@ -1,13 +1,15 @@
 package zbk.fun.crimson.entity;
 
 import zbk.fun.crimson.enums.NPCType;
+import zbk.fun.crimson.utils.EffectsManager;
 import zbk.fun.crimson.utils.WorldUtils;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ai.steer.Steerable;
 import com.badlogic.gdx.ai.steer.SteeringAcceleration;
 import com.badlogic.gdx.ai.steer.SteeringBehavior;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect;
+import com.badlogic.gdx.graphics.g2d.ParticleEmitter.ScaledNumericValue;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
@@ -210,6 +212,22 @@ public class Enemy implements Steerable<Vector2> {
 				body.setAngularVelocity(maxAngVelocity);
 			}
 		}
+	}
+	
+	public PooledEffect effect(Projectile p) {
+
+		PooledEffect effect = EffectsManager.instance().newBloodEffect();
+		effect.setPosition(WorldUtils.m2px(body.getPosition().x)-region.getRegionWidth()/2, WorldUtils.m2px(body.getPosition().y)-region.getRegionHeight()/2);
+//		Add a comment to this line
+		for (int i = 0; i < effect.getEmitters().size; i++) {                          
+			ScaledNumericValue val = effect.getEmitters().get(i).getAngle();           
+			float h1 = p.rotation + 90f;                                            
+			float h2 = p.rotation - 90f;                                            
+			val.setHigh(h1, h2);                                           
+			val.setLow(p.rotation);       
+		}   
+		return effect;
+
 	}
 
 	// the display area is considered to wrap around from top to bottom

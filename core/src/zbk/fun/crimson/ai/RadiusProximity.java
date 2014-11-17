@@ -15,7 +15,9 @@ public class RadiusProximity extends AABBProximity {
 
 	@SuppressWarnings("unchecked")
 	protected Steerable<Vector2> getSteerable (Fixture fixture) {
-		return (Steerable<Vector2>)fixture.getBody().getUserData();
+		if (fixture.getUserData() instanceof Enemy)
+			return (Steerable<Vector2>)fixture.getBody().getUserData();
+		return null;
 	}
 
 	@Override

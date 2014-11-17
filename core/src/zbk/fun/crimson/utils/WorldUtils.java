@@ -70,11 +70,11 @@ public class WorldUtils {
 		
 	}
 	
-	public static void createBulletBody(World world, Player player, Projectile bullet) {
+	public static void createBulletBody(World world, Vector2 position, Projectile bullet) {
 		
 		BodyDef bodyDef = new BodyDef();
 		bodyDef.type = BodyType.DynamicBody;
-		bodyDef.position.set(player.getPosition().cpy());
+		bodyDef.position.set(px2m((int) position.x), px2m((int) position.y));
 		
 		bullet.body = world.createBody(bodyDef);
 		
@@ -87,7 +87,7 @@ public class WorldUtils {
 		fixtureDef.friction = 0.4f;
 		fixtureDef.restitution = 0f;
 		
-		player.body.createFixture(fixtureDef);
+		bullet.body.createFixture(fixtureDef);
 		bullet.body.setUserData(bullet);
 		
 		circle.dispose();

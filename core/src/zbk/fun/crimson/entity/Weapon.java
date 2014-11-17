@@ -2,6 +2,7 @@ package zbk.fun.crimson.entity;
 
 import zbk.fun.crimson.enums.WeaponType;
 import zbk.fun.crimson.utils.GameObjectsManager;
+import zbk.fun.crimson.utils.WorldUtils;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
@@ -58,13 +59,11 @@ public class Weapon implements Pickable {
 	public void fire(Vector2 position, Vector2 target) {
 
 		if (clip > 0) {
-			Projectile p = GameObjectsManager.instance().getBulletPool().obtain();
-			p.init(position, target);
+			Projectile p = GameObjectsManager.instance().newBullet(position, target);
 			p.speed = type.getSpeed();
 			p.damage= type.getDamage();
 			p.maxDistance = type.getRange();
 			clip--;
-			GameObjectsManager.instance().getBullets().add(p);
 		} 
 	}
 	

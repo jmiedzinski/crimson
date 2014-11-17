@@ -1,5 +1,7 @@
 package zbk.fun.crimson.ai;
 
+import zbk.fun.crimson.entity.Projectile;
+
 import com.badlogic.gdx.ai.steer.Proximity;
 import com.badlogic.gdx.ai.steer.Steerable;
 import com.badlogic.gdx.math.Vector2;
@@ -89,8 +91,9 @@ public class AABBProximity implements Proximity<Vector2>, QueryCallback {
 
 	@Override
 	public boolean reportFixture (Fixture fixture) {
+
 		Steerable<Vector2> steerable = getSteerable(fixture);
-		if (steerable != owner && accept(steerable)) {
+		if (steerable != null && steerable != owner && accept(steerable)) {
 			if (behaviorCallback.reportNeighbor(steerable)) neighborCount++;
 		}
 		return true;

@@ -6,6 +6,7 @@ import java.util.List;
 import zbk.fun.crimson.entity.Player;
 import zbk.fun.crimson.entity.Weapon;
 import zbk.fun.crimson.enums.WeaponType;
+import zbk.fun.crimson.utils.CollisionListener;
 import zbk.fun.crimson.utils.EffectsManager;
 import zbk.fun.crimson.utils.GameObjectsManager;
 import zbk.fun.crimson.utils.MarksManager;
@@ -102,6 +103,8 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		weapons.add(machinegun);
 
 		this.world = new World(new Vector2(0, 0), true);
+		world.setContactListener(new CollisionListener());
+		GameObjectsManager.instance().setWorld(world);
 		
 		WorldUtils.createPlayerBody(world, player);
 		NPCManager.instance().populateEnemies(world, player, 50);
@@ -155,7 +158,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 		NPCManager.instance().renderEnemies(batch, deltaTime);
 
-//		GameObjectsManager.instance().renderBullets(batch);
+		GameObjectsManager.instance().renderBullets(batch);
 
 		GameObjectsManager.instance().renderExplosives(batch);
 

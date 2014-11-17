@@ -7,12 +7,16 @@ import zbk.fun.crimson.entity.Explosive;
 import zbk.fun.crimson.entity.Projectile;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.Pools;
 
 public class GameObjectsManager {
 
 	private static GameObjectsManager instance;
+	
+	private World world;
 	
 	private Pool<Projectile> bulletPool;
 	private List<Projectile> bullets;
@@ -48,13 +52,25 @@ public class GameObjectsManager {
 		return bullets;
 	}
 	
+	public Projectile newBullet(Vector2 position, Vector2 target) {
+		
+		Projectile p = bulletPool.obtain();
+		p.init(position, target);
+		WorldUtils.createBulletBody(world, position, p);
+		bullets.add(p);
+		
+		return p;
+	}
+	
 	public List<Projectile> getBulletsToRemove() {
 		return bulletsToRemove;
 	}
 	
 	public void clearBullets() {
-		for (Projectile p : bulletsToRemove)
+		for (Projectile p : bulletsToRemove) {
+			world.destroyBody(p.body);
 			bulletPool.free(p);
+		}
 		bullets.removeAll(bulletsToRemove);
 		bulletsToRemove.clear();
 	}
@@ -104,6 +120,10 @@ public class GameObjectsManager {
 			e.render(batch);
 		}
 		clearExplosives();
+	}
+	
+	public void setWorld(World world) {
+		this.world = world;
 	}
 	
 }
