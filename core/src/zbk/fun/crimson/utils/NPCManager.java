@@ -77,7 +77,7 @@ public class NPCManager {
 		Texture t = new Texture(Gdx.files.internal(type.getTexture()));
 
 		final Enemy enemy = WorldUtils.createNPC(world, TextureRegion.split(t, t.getWidth(), t.getHeight())[0][0], false, type);
-		enemy.setMaxLinearSpeed(1.5f);
+		enemy.setMaxLinearSpeed(MathUtils.random(0.5f, 1.5f));
 		enemy.setMaxLinearAcceleration(40);
 
 		RadiusProximity proximity = new RadiusProximity(enemy, world, enemy.getBoundingRadius() * 4);
@@ -100,9 +100,9 @@ public class NPCManager {
 		seekSB.setLimiter(new LinearAccelerationLimiter(30));
 
 		PrioritySteering<Vector2> prioritySteeringSB = new PrioritySteering<Vector2>(enemy, 0.0001f);
-		prioritySteeringSB.add(collisionAvoidanceSB);
+//		prioritySteeringSB.add(collisionAvoidanceSB);
 		prioritySteeringSB.add(seekSB);
-		//			prioritySteeringSB.add(wanderSB);
+//		prioritySteeringSB.add(wanderSB);
 
 		enemy.setSteeringBehavior(prioritySteeringSB);
 

@@ -7,6 +7,8 @@ import zbk.fun.crimson.utils.WorldUtils;
 import com.badlogic.gdx.ai.steer.Steerable;
 import com.badlogic.gdx.ai.steer.SteeringAcceleration;
 import com.badlogic.gdx.ai.steer.SteeringBehavior;
+import com.badlogic.gdx.ai.steer.behaviors.Flee;
+import com.badlogic.gdx.ai.steer.behaviors.PrioritySteering;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect;
 import com.badlogic.gdx.graphics.g2d.ParticleEmitter.ScaledNumericValue;
@@ -34,10 +36,14 @@ public class Enemy implements Steerable<Vector2> {
 	float maxAngularAcceleration;
 
 	boolean independentFacing;
+	
+	protected SteeringBehavior<Vector2> laststeeringBehavior;
 
 	protected SteeringBehavior<Vector2> steeringBehavior;
 	
 	private static final SteeringAcceleration<Vector2> steeringOutput = new SteeringAcceleration<Vector2>(new Vector2());
+	
+	private float fleeTime;
 	
 	public Enemy() {
 		
@@ -51,6 +57,7 @@ public class Enemy implements Steerable<Vector2> {
 		this.region = region;
 		this.independentFacing = independentFacing;
 		this.tagged = false;
+		fleeTime = 3f;
 	}
 	
 	public TextureRegion getRegion () {
@@ -144,6 +151,15 @@ public class Enemy implements Steerable<Vector2> {
 	}
 
 	public void update (float deltaTime) {
+		
+		if (steeringBehavior instanceof Flee<?>) {
+			fleeTime -= deltaTime;
+			if (fleeTime <= 0f) {
+				steeringBehavior = laststeeringBehavior;
+				fleeTime = 3f;
+			}
+		}
+		
 		if (steeringBehavior != null) {
 			// Calculate steering acceleration
 			steeringBehavior.calculateSteering(steeringOutput);
@@ -229,6 +245,21 @@ public class Enemy implements Steerable<Vector2> {
 		return effect;
 
 	}
+	
+	public void flee(Player player) {
+		
+		if (!(steeringBehavior instanceof Flee<?>)) {
+
+			Flee<Vector2> fleeSB = new Flee<Vector2>(this);
+			fleeSB.setTarget(player);
+			
+			laststeeringBehavior = steeringBehavior;
+			steeringBehavior = fleeSB;			
+		} else {
+			fleeTime = 3f;
+		}
+		
+	}
 
 	// the display area is considered to wrap around from top to bottom
 	// and from left to right
@@ -306,6 +337,10 @@ public class Enemy implements Steerable<Vector2> {
 	@Override
 	public void setMaxAngularAcceleration (float maxAngularAcceleration) {
 		this.maxAngularAcceleration = maxAngularAcceleration;
+	}
+
+	public NPCType getType() {
+		return type;
 	}
 	
 }

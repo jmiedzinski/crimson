@@ -57,8 +57,6 @@ public class Player implements InputProcessor, Steerable<Vector2> {
 
 	private BitmapFont font;
 
-	private Rectangle bbox;
-
 	public List<Weapon> weapons;
 
 	public Weapon currentWeapon;
@@ -77,6 +75,8 @@ public class Player implements InputProcessor, Steerable<Vector2> {
 	private float boundingRadius;
 	
 	private boolean tagged;
+	
+	public float life;
 
 	public Player(OrthographicCamera camera, int width, int height, int rows, int cols, Texture texture, float animSpeed) {
 
@@ -114,11 +114,12 @@ public class Player implements InputProcessor, Steerable<Vector2> {
 		font.setScale(1.0f);
 
 		moving = false;
-		bbox = new Rectangle(position.x-25, position.y-25, 50, 50);
 		weapons = new LinkedList<Weapon>();
 		
 		this.boundingRadius = WorldUtils.px2m((width + height) / 2);
 		this.tagged = false;
+		
+		this.life = 200f;
 	}
 
 	public void update() {
@@ -138,7 +139,6 @@ public class Player implements InputProcessor, Steerable<Vector2> {
 		} else {
 			moving = false;
 		}
-		bbox.set(position.x-25, position.y-25, 50, 50);
 		body.setTransform(WorldUtils.px2m((int) position.x), WorldUtils.px2m((int) position.y), rotation);
 
 	}
@@ -281,10 +281,6 @@ public class Player implements InputProcessor, Steerable<Vector2> {
 		position.y -= walkSpeed * Math.sin(MathUtils.degreesToRadians * direction.angle());
 		this.sprite.setCenter(this.position.x, this.position.y);
 		this.sprite.setOriginCenter();
-	}
-
-	public Rectangle getBbox() {
-		return bbox;
 	}
 
 	public void pickup(Pickable pickable) {

@@ -5,9 +5,13 @@ import java.util.Set;
 
 public enum WeaponType {
 
-	PISTOL(10, 10f, 5f, 200f),
-	MACHINE_GUN(25, 15f, 7f, 300f),
-	SHOTGUN(15, 30f, 6f, 150f);
+	PISTOL(1, "assets/pistol.png", 10, 10f, 5f, 200f),
+	MACHINE_GUN(2, "assets/machine_gun.png", 25, 15f, 7f, 300f),
+	SHOTGUN(3, "assets/shotgun.png", 15, 30f, 6f, 150f);
+	
+	private int id;
+	
+	private String texture;
 	
 	private float damage;
 	
@@ -23,12 +27,22 @@ public enum WeaponType {
         map = EnumSet.allOf(WeaponType.class);
     }
     
-    WeaponType(int clipSize, float damage, float speed, float range) {
+    WeaponType(int id, String texture, int clipSize, float damage, float speed, float range) {
+    	this.id = id;
+    	this.texture = texture;
     	this.clipSize = clipSize;
     	this.damage = damage;
     	this.speed = speed;
     	this.range = range;
     }
+    
+    public int getId() {
+		return id;
+	}
+
+	public String getTexture() {
+		return texture;
+	}
 
 	public float getDamage() {
 		return damage;

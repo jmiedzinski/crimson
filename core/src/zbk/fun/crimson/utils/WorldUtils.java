@@ -3,6 +3,7 @@ package zbk.fun.crimson.utils;
 import zbk.fun.crimson.entity.Enemy;
 import zbk.fun.crimson.entity.Player;
 import zbk.fun.crimson.entity.Projectile;
+import zbk.fun.crimson.entity.Weapon;
 import zbk.fun.crimson.enums.NPCType;
 
 import com.badlogic.gdx.Gdx;
@@ -13,6 +14,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
+import com.badlogic.gdx.physics.box2d.ChainShape;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
@@ -38,6 +40,24 @@ public class WorldUtils {
 	
 	public static int m2px(float meters) {
 		return metersToPixels(meters);
+	}
+	
+	public static void createWorld(World world, Body groundBody) {
+		
+		world = new World(new Vector2(0, 0), true);
+		
+		float halfWidth = 800f / 2f;
+		ChainShape chainShape = new ChainShape();
+		chainShape.createLoop(new Vector2[] {
+				new Vector2(-halfWidth, 0f),
+				new Vector2(halfWidth, 0f),
+				new Vector2(halfWidth, 600f),
+				new Vector2(-halfWidth, 600f) });
+		BodyDef chainBodyDef = new BodyDef();
+		chainBodyDef.type = BodyType.StaticBody;
+		groundBody = world.createBody(chainBodyDef);
+		groundBody.createFixture(chainShape, 0);
+		chainShape.dispose();
 	}
 	
 	public static void createPlayerBody(World world, Player player) {
@@ -89,6 +109,30 @@ public class WorldUtils {
 		
 		bullet.body.createFixture(fixtureDef);
 		bullet.body.setUserData(bullet);
+		
+		circle.dispose();
+	}
+	
+	public static void createWeaponBody(World world, Weapon weapon) {
+		
+		BodyDef bodyDef = new BodyDef();
+		bodyDef.type = BodyType.DynamicBody;
+		bodyDef.position.set(px2m((int) weapon.position.x), px2m((int) weapon.position.y));
+		
+		weapon.body = world.createBody(bodyDef);
+		
+		CircleShape circle = new CircleShape();
+		circle.setRadius(0.5f);
+		
+		FixtureDef fixtureDef = new FixtureDef();
+		fixtureDef.shape = circle;
+		fixtureDef.density = 1f; 
+		fixtureDef.friction = 0.4f;
+		fixtureDef.restitution = 0f;
+		
+		weapon.body.createFixture(fixtureDef);
+		weapon.body.setUserData(weapon);
+		weapon.body.setTransform(px2m((int) weapon.position.x), px2m((int) weapon.position.y), 0f);
 		
 		circle.dispose();
 	}

@@ -12,6 +12,9 @@ import zbk.fun.crimson.utils.GameObjectsManager;
 import zbk.fun.crimson.utils.MarksManager;
 import zbk.fun.crimson.utils.NPCManager;
 import zbk.fun.crimson.utils.WorldUtils;
+import box2dLight.Light;
+import box2dLight.PointLight;
+import box2dLight.RayHandler;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -32,6 +35,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 
@@ -55,13 +59,13 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	List<Weapon> weapons;
 
 	World world;
+	Body groundBody;
 
-	Box2DDebugRenderer debugRenderer;
+	RayHandler rayHandler;
+	ArrayList<Light> lights = new ArrayList<Light>();
 
 	@Override
 	public void create () {
-		
-		debugRenderer = new Box2DDebugRenderer();
 		
 		batch = new SpriteBatch();
 		camera = new OrthographicCamera();
@@ -94,20 +98,41 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		camMaxTop = mapSize *tileSize - camera.viewportHeight / 2;
 		camMaxBottom = camera.viewportHeight / 2;
 
-		weapons = new ArrayList<Weapon>();
-		Weapon pistol = new Weapon(WeaponType.PISTOL);
-		weapons.add(pistol);
-		Weapon shotgun = new Weapon(WeaponType.SHOTGUN);
-		weapons.add(shotgun);
-		Weapon machinegun = new Weapon(WeaponType.MACHINE_GUN);
-		weapons.add(machinegun);
-
 		this.world = new World(new Vector2(0, 0), true);
-		world.setContactListener(new CollisionListener());
+		
+		WorldUtils.createWorld(world, groundBody);
+		world.setContactListener(new CollisionListener(player));
 		GameObjectsManager.instance().setWorld(world);
 		
 		WorldUtils.createPlayerBody(world, player);
 		NPCManager.instance().populateEnemies(world, player, 50);
+		
+		weapons = new ArrayList<Weapon>();
+		Weapon pistol = new Weapon();
+		pistol.init(world, WeaponType.PISTOL);
+		weapons.add(pistol);
+		Weapon shotgun = new Weapon();
+		shotgun.init(world, WeaponType.SHOTGUN);
+		weapons.add(shotgun);
+		Weapon machinegun = new Weapon();
+		machinegun.init(world, WeaponType.MACHINE_GUN);
+		weapons.add(machinegun);
+		
+		/** BOX2D LIGHT STUFF BEGIN */
+		RayHandler.setGammaCorrection(true);
+		RayHandler.useDiffuseLight(true);
+		
+		rayHandler = new RayHandler(world);
+		rayHandler.setAmbientLight(0.5f, 0.5f, 0.5f, 0.5f);
+		rayHandler.setBlurNum(3);
+		
+		PointLight light = new PointLight(rayHandler, 128, null, 100f, 0f, 0f);
+		light.setPosition(player.getPosition());
+		light.attachToBody(player.body, 0f, 0f);
+		light.setColor(0f, 0f, 0f, 1f);
+		lights.add(light);
+//		initPointLights();
+		/** BOX2D LIGHT STUFF END */
 
 	}
 
@@ -135,7 +160,6 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		float deltaTime = Gdx.graphics.getDeltaTime();
 
 		world.step(deltaTime, 8, 3);
-		debugRenderer.render(world, camera.combined);
 
 		camera.update();
 		camBounds.set(camera.position.x - camera.viewportWidth / 2, camera.position.y - camera.viewportHeight / 2, camera.viewportWidth, camera.viewportHeight);
@@ -150,7 +174,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		MarksManager.instance().renderMarks(batch);
 
 		for (Weapon w : weapons) {
-			w.update(player);
+//			w.update(player);
 			w.render(batch);
 		}
 
@@ -189,10 +213,16 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 //		shapeRenderer.line(player.getPosition().x, player.getPosition().y, camera.position.x, camera.position.y);
 //		shapeRenderer.end();
 
-		if (!mapBounds.contains(player.getBbox())) {
-			player.stop();
-			player.stepBack();
-		}
+//		if (!mapBounds.contains(player.getBbox())) {
+//			player.stop();
+//			player.stepBack();
+//		}
+		
+		/** BOX2D LIGHT STUFF BEGIN */
+		rayHandler.setCombinedMatrix(camera.combined);
+
+		rayHandler.updateAndRender();
+		/** BOX2D LIGHT STUFF END */
 
 		moveCamera();
 
@@ -209,17 +239,19 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		font.draw(batch, "BLM: " + MarksManager.instance().getMarks().size(), screen.x, screen.y - (lines*15)); 	lines++;
 
 		batch.end();
+		
+
 
 	}
 
 	public void renderHUD(SpriteBatch batch) {
 
 		if (player.currentWeapon != null) {
-			Vector3 screen = new Vector3(Gdx.graphics.getWidth() - player.currentWeapon.width - 10, 10 + player.currentWeapon.height, 0);
+			Vector3 screen = new Vector3(Gdx.graphics.getWidth() - player.currentWeapon.texture.getWidth() - 10, 10 + player.currentWeapon.texture.getHeight(), 0);
 			camera.unproject(screen);
 			player.currentWeapon.sprite.setPosition(screen.x, screen.y);
 			player.currentWeapon.sprite.draw(batch);
-			screen.set(Gdx.graphics.getWidth() - player.currentWeapon.width - 20, 10 + player.currentWeapon.height, 0);
+			screen.set(Gdx.graphics.getWidth() - player.currentWeapon.texture.getWidth() - 20, 10 + player.currentWeapon.texture.getHeight(), 0);
 			camera.unproject(screen);
 			font.draw(batch, Integer.toString(player.currentWeapon.clip), screen.x, screen.y);
 		}
@@ -228,6 +260,8 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	@Override
 	public void dispose() {
 		batch.dispose();
+		world.dispose();
+		rayHandler.dispose();
 	}
 
 	@Override
