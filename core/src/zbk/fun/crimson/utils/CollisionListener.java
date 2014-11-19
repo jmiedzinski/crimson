@@ -4,6 +4,7 @@ import zbk.fun.crimson.entity.Enemy;
 import zbk.fun.crimson.entity.Player;
 import zbk.fun.crimson.entity.Projectile;
 import zbk.fun.crimson.entity.Weapon;
+import zbk.fun.crimson.enums.EnemyBehavior;
 import zbk.fun.crimson.enums.SurfacemarkType;
 
 import com.badlogic.gdx.math.MathUtils;
@@ -28,9 +29,14 @@ public class CollisionListener implements ContactListener {
 		Enemy enemy = null;
 		Player player = null;
 		Weapon weapon = null;
-
+		
+		boolean playerSpotted = false;
+		
 		Object a = contact.getFixtureA().getBody().getUserData();
 		Object b = contact.getFixtureB().getBody().getUserData();
+		
+		if (contact.getFixtureA().isSensor() || contact.getFixtureB().isSensor())
+			playerSpotted = true;
 		
 		if (a instanceof Projectile && b instanceof Enemy) {
 			bullet = (Projectile) a;
@@ -57,7 +63,7 @@ public class CollisionListener implements ContactListener {
 			Vector2 enemyPos = new Vector2(WorldUtils.m2px(enemy.body.getPosition().x), WorldUtils.m2px(enemy.body.getPosition().y));
 			enemy.body.applyForceToCenter(bullet.direction.scl(10f), true);
 			enemy.life -= bullet.damage;
-			enemy.flee(this.player);
+			enemy.changeBehavior(EnemyBehavior.FLEE);
 			bullet.active = false;
 			EffectsManager.instance().getEffects().add(enemy.effect(bullet));
 			MarksManager.instance().getMark().init(SurfacemarkType.BLOODMARK, enemyPos, MathUtils.random(360f));
@@ -66,7 +72,10 @@ public class CollisionListener implements ContactListener {
 		
 		if (enemy != null && player != null) {
 			
-			player.life -= enemy.getType().getDamage();
+			if (!playerSpotted)
+				player.life -= enemy.getType().getDamage();
+			else
+				enemy.changeBehavior(EnemyBehavior.SEEK);
 		}
 		
 		if (weapon != null && player != null) {
@@ -81,8 +90,31 @@ public class CollisionListener implements ContactListener {
 
 	@Override
 	public void endContact(Contact contact) {
-		// TODO Auto-generated method stub
+
+		Enemy enemy = null;
+		Player player = null;
 		
+		boolean playerSpotted = false;
+		
+		Object a = contact.getFixtureA().getBody().getUserData();
+		Object b = contact.getFixtureB().getBody().getUserData();
+		
+		if (contact.getFixtureA().isSensor() || contact.getFixtureB().isSensor())
+			playerSpotted = true;
+		
+		if (a instanceof Player && b instanceof Enemy) {
+			player = (Player) a;
+			enemy = (Enemy) b;
+		} else if (a instanceof Enemy && b instanceof Player) {
+			player = (Player) b;
+			enemy = (Enemy) a;			
+		}
+		
+		if (enemy != null && player != null) {
+			
+			if (playerSpotted)
+				enemy.changeBehavior(EnemyBehavior.WANDER);
+		}
 	}
 
 	@Override

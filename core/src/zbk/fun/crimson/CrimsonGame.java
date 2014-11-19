@@ -3,10 +3,12 @@ package zbk.fun.crimson;
 import java.util.ArrayList;
 
 import zbk.fun.crimson.entity.Player;
+import zbk.fun.crimson.enums.LightSourceType;
 import zbk.fun.crimson.enums.WeaponType;
 import zbk.fun.crimson.utils.CollisionListener;
 import zbk.fun.crimson.utils.EffectsManager;
 import zbk.fun.crimson.utils.GameObjectsManager;
+import zbk.fun.crimson.utils.LightsManager;
 import zbk.fun.crimson.utils.MarksManager;
 import zbk.fun.crimson.utils.NPCManager;
 import zbk.fun.crimson.utils.WorldUtils;
@@ -113,9 +115,12 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		RayHandler.useDiffuseLight(true);
 		
 		rayHandler = new RayHandler(world);
-		rayHandler.setAmbientLight(0.4f, 0.4f, 0.4f, 0.5f);
+		rayHandler.setAmbientLight(0.5f, 0.5f, 0.5f, 0.5f);
 		rayHandler.setBlurNum(3);
 		rayHandler.setShadows(true);
+		
+		LightsManager.instance().setRayHandler(rayHandler);
+		LightsManager.instance().newLight(LightSourceType.LIGHTSTICK, new Vector2(100f, 100f));
 		
 //		PointLight light = new PointLight(rayHandler, 128, Color.WHITE, 300f, player.getPosition().x, player.getPosition().y);
 //		lights.add(light);
@@ -181,6 +186,9 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		lights.get(0).setPosition(WorldUtils.m2px(player.getPosition().x), WorldUtils.m2px(player.getPosition().y));
 		lights.get(0).setDirection(player.getOrientation());
 		rayHandler.updateAndRender();
+		
+		LightsManager.instance().render(deltaTime);
+		
 		/** BOX2D LIGHT STUFF END */
 
 		moveCamera();
@@ -196,6 +204,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		font.draw(batch, "PRJ: " + GameObjectsManager.instance().getBullets().size(), 10, 600 - (lines*15)); 	lines++;
 		font.draw(batch, "BLM: " + MarksManager.instance().getMarks().size(), 10, 600 - (lines*15)); 	lines++;
 		font.draw(batch, "LGT: " + lights.get(0).getPosition().toString(), 10, 600 - (lines*15)); 	lines++;
+		font.draw(batch, "LIF: " + Float.toString(player.life), 10, 600 - (lines*15)); 	lines++;
 
 		batch.end();
 

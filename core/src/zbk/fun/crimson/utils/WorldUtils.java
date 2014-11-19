@@ -90,6 +90,20 @@ public class WorldUtils {
 
 		circle.dispose();
 		
+		circle = new CircleShape();
+		circle.setRadius(8f);
+		
+		fixtureDef = new FixtureDef();
+		fixtureDef.isSensor = true;
+		fixtureDef.shape = circle;
+		fixtureDef.density = 1f; 
+		fixtureDef.friction = 0.4f;
+		fixtureDef.restitution = 0f;
+		
+		fixture = player.body.createFixture(fixtureDef);
+		
+		circle.dispose();
+		
 	}
 	
 	public static void createBulletBody(World world, Vector2 position, Projectile bullet) {

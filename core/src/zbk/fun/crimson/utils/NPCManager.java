@@ -5,11 +5,13 @@ import java.util.Iterator;
 import zbk.fun.crimson.ai.RadiusProximity;
 import zbk.fun.crimson.entity.Enemy;
 import zbk.fun.crimson.entity.Player;
+import zbk.fun.crimson.enums.EnemyBehavior;
 import zbk.fun.crimson.enums.NPCType;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ai.steer.Steerable;
 import com.badlogic.gdx.ai.steer.behaviors.CollisionAvoidance;
+import com.badlogic.gdx.ai.steer.behaviors.Flee;
 import com.badlogic.gdx.ai.steer.behaviors.PrioritySteering;
 import com.badlogic.gdx.ai.steer.behaviors.Seek;
 import com.badlogic.gdx.ai.steer.behaviors.Wander;
@@ -95,16 +97,25 @@ public class NPCManager {
 				.setWanderOrientation(10) //
 				.setWanderRadius(40) //
 				.setWanderRate(MathUtils.PI / 5);
+		
+		enemy.behaviors.put(EnemyBehavior.WANDER, wanderSB);
 
 		Seek<Vector2> seekSB = new Seek<Vector2>(enemy, player);
 		seekSB.setLimiter(new LinearAccelerationLimiter(30));
+		
+		enemy.behaviors.put(EnemyBehavior.SEEK, seekSB);
+		
+		Flee<Vector2> fleeSB = new Flee<Vector2>(enemy, player);
+		fleeSB.setLimiter(new LinearAccelerationLimiter(30f));
+		
+		enemy.behaviors.put(EnemyBehavior.FLEE, fleeSB);
 
-		PrioritySteering<Vector2> prioritySteeringSB = new PrioritySteering<Vector2>(enemy, 0.0001f);
+//		PrioritySteering<Vector2> prioritySteeringSB = new PrioritySteering<Vector2>(enemy, 0.0001f);
 //		prioritySteeringSB.add(collisionAvoidanceSB);
 //		prioritySteeringSB.add(seekSB);
-		prioritySteeringSB.add(wanderSB);
+//		prioritySteeringSB.add(wanderSB);
 
-		enemy.setSteeringBehavior(prioritySteeringSB);
+		enemy.changeBehavior(EnemyBehavior.WANDER);
 
 		WorldUtils.setRandomNonOverlappingPosition(enemy, enemies, WorldUtils.pixelsToMeters(5));
 
