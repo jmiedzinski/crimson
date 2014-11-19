@@ -45,14 +45,16 @@ public class WorldUtils {
 	public static void createWorld(World world, Body groundBody) {
 		
 		world = new World(new Vector2(0, 0), true);
+		float worldWidth = 1600f;
+		float worldHeight = 1600f;
 		
-		float halfWidth = 800f / 2f;
+		float halfWidth = worldWidth / 2f;
 		ChainShape chainShape = new ChainShape();
 		chainShape.createLoop(new Vector2[] {
 				new Vector2(-halfWidth, 0f),
 				new Vector2(halfWidth, 0f),
-				new Vector2(halfWidth, 600f),
-				new Vector2(-halfWidth, 600f) });
+				new Vector2(halfWidth, worldHeight),
+				new Vector2(-halfWidth, worldHeight) });
 		BodyDef chainBodyDef = new BodyDef();
 		chainBodyDef.type = BodyType.StaticBody;
 		groundBody = world.createBody(chainBodyDef);
@@ -122,7 +124,7 @@ public class WorldUtils {
 		weapon.body = world.createBody(bodyDef);
 		
 		CircleShape circle = new CircleShape();
-		circle.setRadius(0.5f);
+		circle.setRadius(2f);
 		
 		FixtureDef fixtureDef = new FixtureDef();
 		fixtureDef.shape = circle;

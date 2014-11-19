@@ -5,6 +5,8 @@ import java.util.List;
 
 import zbk.fun.crimson.entity.Explosive;
 import zbk.fun.crimson.entity.Projectile;
+import zbk.fun.crimson.entity.Weapon;
+import zbk.fun.crimson.enums.WeaponType;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
@@ -26,6 +28,10 @@ public class GameObjectsManager {
 	private List<Explosive> explosives;
 	private List<Explosive> explosivesToRemove;
 	
+	private Pool<Weapon> weaponPool;
+	private List<Weapon> weapons;
+	private List<Weapon> weaponsToRemove;
+	
 	private GameObjectsManager() {
 		
 		this.bulletPool = Pools.get(Projectile.class);
@@ -35,6 +41,10 @@ public class GameObjectsManager {
 		this.explosivePool = Pools.get(Explosive.class);
 		this.explosives = new ArrayList<Explosive>();
 		this.explosivesToRemove = new ArrayList<Explosive>();
+		
+		this.weaponPool = Pools.get(Weapon.class);
+		this.weapons = new ArrayList<Weapon>();
+		this.weaponsToRemove = new ArrayList<Weapon>();
 	}
 	
 	public static GameObjectsManager instance() {
@@ -100,11 +110,11 @@ public class GameObjectsManager {
 		return e;
 	}
 	
-	public void renderBullets(SpriteBatch batch) {
+	public void renderBullets(SpriteBatch batch, float deltaTime) {
 		
 		for (Projectile p : bullets) {
 			if (p.active) {
-				p.update(NPCManager.instance().getEnemies());
+				p.update(NPCManager.instance().getEnemies(), deltaTime);
 				p.render(batch);
 			} else {
 				bulletsToRemove.add(p);
@@ -113,15 +123,43 @@ public class GameObjectsManager {
 		clearBullets();
 	}
 	
-	public void renderExplosives(SpriteBatch batch) {
+	public void renderExplosives(SpriteBatch batch, float deltaTime) {
 		
 		for (Explosive e : explosives) {
-			e.update(NPCManager.instance().getEnemies());
+			e.update(NPCManager.instance().getEnemies(), deltaTime);
 			e.render(batch);
 		}
 		clearExplosives();
 	}
 	
+	public void renderWeapons(SpriteBatch batch, float deltaTime) {
+		
+		for (Weapon w : weapons) {
+			w.render(batch, deltaTime);
+		}
+	}
+	
+	public Weapon newWeapon(WeaponType weaponType) {
+		
+		Weapon w = weaponPool.obtain();
+		w.init(world, weaponType);
+		weapons.add(w);
+		
+		return w;
+	}
+	
+	public Pool<Weapon> getWeaponPool() {
+		return weaponPool;
+	}
+
+	public List<Weapon> getWeapons() {
+		return weapons;
+	}
+
+	public List<Weapon> getWeaponsToRemove() {
+		return weaponsToRemove;
+	}
+
 	public void setWorld(World world) {
 		this.world = world;
 	}

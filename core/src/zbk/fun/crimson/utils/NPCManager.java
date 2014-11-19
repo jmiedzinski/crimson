@@ -101,8 +101,8 @@ public class NPCManager {
 
 		PrioritySteering<Vector2> prioritySteeringSB = new PrioritySteering<Vector2>(enemy, 0.0001f);
 //		prioritySteeringSB.add(collisionAvoidanceSB);
-		prioritySteeringSB.add(seekSB);
-//		prioritySteeringSB.add(wanderSB);
+//		prioritySteeringSB.add(seekSB);
+		prioritySteeringSB.add(wanderSB);
 
 		enemy.setSteeringBehavior(prioritySteeringSB);
 

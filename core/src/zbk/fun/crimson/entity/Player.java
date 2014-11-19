@@ -20,7 +20,6 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
@@ -122,9 +121,9 @@ public class Player implements InputProcessor, Steerable<Vector2> {
 		this.life = 200f;
 	}
 
-	public void update() {
+	public void update(float deltaTime) {
 
-		this.time += Gdx.graphics.getDeltaTime();
+		this.time += deltaTime;
 		if (moving)
 			this.sprite.setRegion(this.animation.getKeyFrame(time, moving));
 		else
@@ -143,8 +142,9 @@ public class Player implements InputProcessor, Steerable<Vector2> {
 
 	}
 
-	public void render(SpriteBatch batch) {
-
+	public void render(SpriteBatch batch, float deltaTime) {
+		
+		update(deltaTime);
 		font.draw(batch, Float.toString(Math.round(this.distance)), target.x, target.y);
 		sprite.draw(batch);
 

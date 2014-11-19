@@ -35,11 +35,11 @@ public class EffectsManager {
 		return instance;
 	}
 	
-	public void renderEffects(SpriteBatch batch) {
+	public void renderEffects(SpriteBatch batch, float deltaTime) {
 		
 		for (int i = effects.size - 1; i >= 0; i--) {
 			PooledEffect effect = effects.get(i);
-			effect.draw(batch, Gdx.graphics.getDeltaTime());
+			effect.draw(batch, deltaTime);
 			if (effect.isComplete()) {
 				effect.free();
 				effects.removeIndex(i);

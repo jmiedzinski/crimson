@@ -57,7 +57,7 @@ public class CollisionListener implements ContactListener {
 			Vector2 enemyPos = new Vector2(WorldUtils.m2px(enemy.body.getPosition().x), WorldUtils.m2px(enemy.body.getPosition().y));
 			enemy.body.applyForceToCenter(bullet.direction.scl(10f), true);
 			enemy.life -= bullet.damage;
-			enemy.flee(player);
+			enemy.flee(this.player);
 			bullet.active = false;
 			EffectsManager.instance().getEffects().add(enemy.effect(bullet));
 			MarksManager.instance().getMark().init(SurfacemarkType.BLOODMARK, enemyPos, MathUtils.random(360f));

@@ -1,10 +1,8 @@
 package zbk.fun.crimson;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import zbk.fun.crimson.entity.Player;
-import zbk.fun.crimson.entity.Weapon;
 import zbk.fun.crimson.enums.WeaponType;
 import zbk.fun.crimson.utils.CollisionListener;
 import zbk.fun.crimson.utils.EffectsManager;
@@ -12,6 +10,7 @@ import zbk.fun.crimson.utils.GameObjectsManager;
 import zbk.fun.crimson.utils.MarksManager;
 import zbk.fun.crimson.utils.NPCManager;
 import zbk.fun.crimson.utils.WorldUtils;
+import box2dLight.ConeLight;
 import box2dLight.Light;
 import box2dLight.PointLight;
 import box2dLight.RayHandler;
@@ -21,22 +20,22 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 
 public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
@@ -44,7 +43,6 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	BitmapFont font;
 	Player player;
 	OrthographicCamera camera;
-	private ShapeRenderer shapeRenderer;
 	TiledMap tiledMap;
 	TiledMapRenderer tiledMapRenderer;
 	InputMultiplexer inputMultiplexer;
@@ -55,8 +53,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	Rectangle camBounds;
 
 	float camMaxLeft, camMaxRight, camMaxTop, camMaxBottom;
-
-	List<Weapon> weapons;
+	Matrix4 normalProjection = new Matrix4();
 
 	World world;
 	Body groundBody;
@@ -76,7 +73,6 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		camera.position.x = player.position.x + 5;
 		camera.position.y = player.position.y + 5;
 		camBounds = new Rectangle(camera.position.x - camera.viewportWidth / 2, camera.position.y - camera.viewportHeight / 2, camera.viewportWidth, camera.viewportHeight);
-		shapeRenderer = new ShapeRenderer();
 
 		tiledMap = new TmxMapLoader().load("assets/arena.tmx");
 		tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
@@ -97,6 +93,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		camMaxRight = mapSize * tileSize - camera.viewportWidth / 2;
 		camMaxTop = mapSize *tileSize - camera.viewportHeight / 2;
 		camMaxBottom = camera.viewportHeight / 2;
+		normalProjection.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
 		this.world = new World(new Vector2(0, 0), true);
 		
@@ -107,31 +104,23 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		WorldUtils.createPlayerBody(world, player);
 		NPCManager.instance().populateEnemies(world, player, 50);
 		
-		weapons = new ArrayList<Weapon>();
-		Weapon pistol = new Weapon();
-		pistol.init(world, WeaponType.PISTOL);
-		weapons.add(pistol);
-		Weapon shotgun = new Weapon();
-		shotgun.init(world, WeaponType.SHOTGUN);
-		weapons.add(shotgun);
-		Weapon machinegun = new Weapon();
-		machinegun.init(world, WeaponType.MACHINE_GUN);
-		weapons.add(machinegun);
+		GameObjectsManager.instance().newWeapon(WeaponType.PISTOL);
+		GameObjectsManager.instance().newWeapon(WeaponType.SHOTGUN);
+		GameObjectsManager.instance().newWeapon(WeaponType.MACHINE_GUN);
 		
 		/** BOX2D LIGHT STUFF BEGIN */
 		RayHandler.setGammaCorrection(true);
 		RayHandler.useDiffuseLight(true);
 		
 		rayHandler = new RayHandler(world);
-		rayHandler.setAmbientLight(0.5f, 0.5f, 0.5f, 0.5f);
+		rayHandler.setAmbientLight(0.4f, 0.4f, 0.4f, 0.5f);
 		rayHandler.setBlurNum(3);
+		rayHandler.setShadows(true);
 		
-		PointLight light = new PointLight(rayHandler, 128, null, 100f, 0f, 0f);
-		light.setPosition(player.getPosition());
-		light.attachToBody(player.body, 0f, 0f);
-		light.setColor(0f, 0f, 0f, 1f);
-		lights.add(light);
-//		initPointLights();
+//		PointLight light = new PointLight(rayHandler, 128, Color.WHITE, 300f, player.getPosition().x, player.getPosition().y);
+//		lights.add(light);
+		ConeLight coneLight = new ConeLight(rayHandler, 128, Color.WHITE, 400f, player.getPosition().x, player.getPosition().y, player.getOrientation(), 30f);
+		lights.add(coneLight);
 		/** BOX2D LIGHT STUFF END */
 
 	}
@@ -164,83 +153,51 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		camera.update();
 		camBounds.set(camera.position.x - camera.viewportWidth / 2, camera.position.y - camera.viewportHeight / 2, camera.viewportWidth, camera.viewportHeight);
 		batch.setProjectionMatrix(camera.combined);
-		player.update();
 		Gdx.gl.glClearColor(0, 0, 0.2f, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		tiledMapRenderer.setView(camera);
 		tiledMapRenderer.render();
 		batch.begin();
 
-		MarksManager.instance().renderMarks(batch);
+		MarksManager.instance().renderMarks(batch, deltaTime);
 
-		for (Weapon w : weapons) {
-//			w.update(player);
-			w.render(batch);
-		}
-
-		player.render(batch);
+		player.render(batch, deltaTime);
+		
+		GameObjectsManager.instance().renderWeapons(batch, deltaTime);
 
 		NPCManager.instance().renderEnemies(batch, deltaTime);
 
-		GameObjectsManager.instance().renderBullets(batch);
+		GameObjectsManager.instance().renderBullets(batch, deltaTime);
 
-		GameObjectsManager.instance().renderExplosives(batch);
+		GameObjectsManager.instance().renderExplosives(batch, deltaTime);
 
-		EffectsManager.instance().renderEffects(batch);
+		EffectsManager.instance().renderEffects(batch, deltaTime);
 		
-//		renderHUD(batch);
+		renderHUD(batch);
 		batch.end();
-
-//		shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
-//		shapeRenderer.begin(ShapeType.Line);
-//		shapeRenderer.setColor(Color.WHITE);
-//
-//		for (Enemy e : NPCManager.instance().getEnemies()) {
-//			e.postRender(shapeRenderer);
-//		}
-//
-//		for (Projectile p : GameObjectsManager.instance().getBullets()) {
-//			p.postRender(shapeRenderer);
-//		}
-//
-//		shapeRenderer.rect(player.getBbox().x, player.getBbox().y, player.getBbox().width, player.getBbox().height);
-//
-//		shapeRenderer.setColor(Color.RED);
-//		shapeRenderer.circle(player.getTarget().x, player.getTarget().y, 10);
-//		shapeRenderer.setColor(Color.YELLOW);
-//		shapeRenderer.line(player.getPosition().x, player.getPosition().y, player.getTarget().x, player.getTarget().y);
-//		shapeRenderer.setColor(Color.CYAN);
-//		shapeRenderer.line(player.getPosition().x, player.getPosition().y, camera.position.x, camera.position.y);
-//		shapeRenderer.end();
-
-//		if (!mapBounds.contains(player.getBbox())) {
-//			player.stop();
-//			player.stepBack();
-//		}
 		
 		/** BOX2D LIGHT STUFF BEGIN */
-		rayHandler.setCombinedMatrix(camera.combined);
-
+		rayHandler.setCombinedMatrix(camera);
+		lights.get(0).setPosition(WorldUtils.m2px(player.getPosition().x), WorldUtils.m2px(player.getPosition().y));
+		lights.get(0).setDirection(player.getOrientation());
 		rayHandler.updateAndRender();
 		/** BOX2D LIGHT STUFF END */
 
 		moveCamera();
 
+		batch.setProjectionMatrix(normalProjection);
 		batch.begin();
-		Vector3 screen = new Vector3(10, 10, 0);
-		camera.unproject(screen);
 
 		int lines = 0;
-		font.draw(batch, "TRG: " + MathUtils.round(player.getTarget().x) + ":" + MathUtils.round(player.getTarget().y), screen.x, screen.y - (lines*15)); 	lines++;
-		font.draw(batch, "POS: " + WorldUtils.m2px(player.body.getPosition().x) + ":" + WorldUtils.m2px(player.body.getPosition().y), screen.x, screen.y - (lines*15)); 	lines++;
-		font.draw(batch, "CAM: " + MathUtils.round(camera.position.x) + ":" + MathUtils.round(camera.position.y), screen.x, screen.y - (lines*15)); 	lines++;
-		font.draw(batch, "ENM: " + NPCManager.instance().getEnemies().size, screen.x, screen.y - (lines*15)); 	lines++;
-		font.draw(batch, "PRJ: " + GameObjectsManager.instance().getBullets().size(), screen.x, screen.y - (lines*15)); 	lines++;
-		font.draw(batch, "BLM: " + MarksManager.instance().getMarks().size(), screen.x, screen.y - (lines*15)); 	lines++;
+		font.draw(batch, "TRG: " + MathUtils.round(player.getTarget().x) + ":" + MathUtils.round(player.getTarget().y), 10, 600 - (lines*15)); 	lines++;
+		font.draw(batch, "POS: " + WorldUtils.m2px(player.body.getPosition().x) + ":" + WorldUtils.m2px(player.body.getPosition().y), 10, 600 - (lines*15)); 	lines++;
+		font.draw(batch, "CAM: " + MathUtils.round(camera.position.x) + ":" + MathUtils.round(camera.position.y), 10, 600 - (lines*15)); 	lines++;
+		font.draw(batch, "ENM: " + NPCManager.instance().getEnemies().size, 10, 600 - (lines*15)); 	lines++;
+		font.draw(batch, "PRJ: " + GameObjectsManager.instance().getBullets().size(), 10, 600 - (lines*15)); 	lines++;
+		font.draw(batch, "BLM: " + MarksManager.instance().getMarks().size(), 10, 600 - (lines*15)); 	lines++;
+		font.draw(batch, "LGT: " + lights.get(0).getPosition().toString(), 10, 600 - (lines*15)); 	lines++;
 
 		batch.end();
-		
-
 
 	}
 

@@ -57,11 +57,11 @@ public class MarksManager {
 		return mark;
 	}
 	
-	public void renderMarks(SpriteBatch batch) {
+	public void renderMarks(SpriteBatch batch, float deltaTime) {
 		
 		for (Surfacemark mark : marks) {
 			if (mark.active)
-				mark.render(batch);
+				mark.render(batch, deltaTime);
 			else
 				marksToRemove.add(mark);
 		}

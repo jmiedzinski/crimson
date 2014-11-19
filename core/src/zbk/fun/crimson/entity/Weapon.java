@@ -69,14 +69,7 @@ public class Weapon implements Pickable, Poolable {
 		WorldUtils.createWeaponBody(world, this);
 	}
 
-//	public void update(Player player) {
-//		if (!attached && player.getBbox().overlaps(bbox)) {
-//			attached = true;
-//			player.pickup(this);
-//		}
-//	}
-
-	public void render(SpriteBatch batch) {
+	public void render(SpriteBatch batch, float deltaTime) {
 		if (!attached)
 			sprite.draw(batch);
 	}
@@ -98,7 +91,8 @@ public class Weapon implements Pickable, Poolable {
 
 	@Override
 	public void reset() {
-		// TODO Auto-generated method stub
+		world.destroyBody(body);
+		texture.dispose();
 		
 	}
 }

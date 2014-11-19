@@ -65,11 +65,11 @@ public class Explosive implements Poolable {
 		sprite.setOriginCenter();
 	}
 	
-	public void update(Array<Steerable<Vector2>> enemies) {
+	public void update(Array<Steerable<Vector2>> enemies, float deltaTime) {
 		
 		boolean explode = false;
-		time -= Gdx.graphics.getDeltaTime();
-		animTime += Gdx.graphics.getDeltaTime();
+		time -= deltaTime;
+		animTime += deltaTime;
 		
 		sprite.setRegion(animation.getKeyFrame(animTime, true));
 		

@@ -8,7 +8,8 @@ import com.badlogic.gdx.ai.steer.Steerable;
 import com.badlogic.gdx.ai.steer.SteeringAcceleration;
 import com.badlogic.gdx.ai.steer.SteeringBehavior;
 import com.badlogic.gdx.ai.steer.behaviors.Flee;
-import com.badlogic.gdx.ai.steer.behaviors.PrioritySteering;
+import com.badlogic.gdx.ai.steer.limiters.LinearAccelerationLimiter;
+import com.badlogic.gdx.ai.steer.limiters.LinearSpeedLimiter;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect;
 import com.badlogic.gdx.graphics.g2d.ParticleEmitter.ScaledNumericValue;
@@ -250,9 +251,8 @@ public class Enemy implements Steerable<Vector2> {
 		
 		if (!(steeringBehavior instanceof Flee<?>)) {
 
-			Flee<Vector2> fleeSB = new Flee<Vector2>(this);
-			fleeSB.setTarget(player);
-			
+			Flee<Vector2> fleeSB = new Flee<Vector2>(this, player);
+			fleeSB.setLimiter(new LinearAccelerationLimiter(30f));
 			laststeeringBehavior = steeringBehavior;
 			steeringBehavior = fleeSB;			
 		} else {

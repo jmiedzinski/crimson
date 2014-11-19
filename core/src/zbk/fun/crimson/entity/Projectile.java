@@ -4,13 +4,10 @@ import zbk.fun.crimson.utils.WorldUtils;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ai.steer.Steerable;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.utils.Array;
@@ -32,11 +29,6 @@ public class Projectile implements Poolable {
 
 	public Sprite sprite;
 
-	public Rectangle bbox;
-
-	private int width;
-	private int height;
-
 	public boolean active;
 	
 	public Body body;
@@ -53,8 +45,6 @@ public class Projectile implements Poolable {
 	public void init(Vector2 position, Vector2 target) {
 
 		Texture t = new Texture(Gdx.files.internal("assets/bullet.png"));
-		this.width = t.getWidth();
-		this.height = t.getHeight();
 
 		this.startPoint = position.cpy();
 		this.position = position;
@@ -73,14 +63,13 @@ public class Projectile implements Poolable {
 		maxDistance = 1000f;
 		distance = 0f;
 
-		this.bbox = new Rectangle(position.x - t.getWidth() / 2, position.y - t.getHeight() / 2, t.getWidth(), t.getHeight());
 		this.active = true;
 	}
 
-	public void update(Array<Steerable<Vector2>> enemies) {
+	public void update(Array<Steerable<Vector2>> enemies, float deltaTime) {
 
 		if (active) {
-			time += Gdx.graphics.getDeltaTime();
+			time += deltaTime;
 
 			position.x += speed * Math.cos(MathUtils.degreesToRadians * direction.angle());
 			position.y += speed * Math.sin(MathUtils.degreesToRadians * direction.angle());
@@ -93,17 +82,6 @@ public class Projectile implements Poolable {
 			if (distance > maxDistance)
 				active = false;
 			
-//			for (int i = 0; i < enemies.size; i++) {
-//				
-//				Enemy e = (Enemy) enemies.get(i);
-//				if (bbox.overlaps(e.bbox)) {
-//					e.life -= damage;
-//					e.effect(this);
-//					Surfacemark mark = MarksManager.instance().getMark();
-//					mark.init(SurfacemarkType.BLOODMARK, position.cpy(), rotation);
-//					active = false;
-//				}
-//			}
 		}
 	}
 
@@ -111,11 +89,6 @@ public class Projectile implements Poolable {
 		sprite.draw(batch);
 	}
 	
-	public void postRender(ShapeRenderer sr) {
-		sr.setColor(Color.WHITE);
-		sr.rect(bbox.x,  bbox.y,  bbox.width,  bbox.height);
-	}
-
 	@Override
 	public void reset() {
 		active = false;

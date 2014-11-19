@@ -43,9 +43,9 @@ public class Surfacemark implements Poolable {
 		sprite.setRotation(rotation);
 	}
 	
-	public void update() {
+	public void update(float deltaTime) {
 		
-		time -= Gdx.graphics.getDeltaTime();
+		time -= deltaTime;
 		if (time > 0f) {
 			alfa = (time * 1f) / ttl;
 		} else {
@@ -53,8 +53,8 @@ public class Surfacemark implements Poolable {
 		}
 	}
 	
-	public void render(SpriteBatch batch) {
-		update();
+	public void render(SpriteBatch batch, float deltaTime) {
+		update(deltaTime);
 		sprite.draw(batch, alfa);
 	}
 
@@ -63,6 +63,7 @@ public class Surfacemark implements Poolable {
 
 		active = false;
 		alfa = 1.0f;
+		texture.dispose();
 		
 	}
 }
