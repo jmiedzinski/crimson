@@ -30,6 +30,7 @@ public class NPCManager {
 
 	private static NPCManager instance;
 
+	private World world;
 	private Pool<Enemy> enemyPool;
 	private Array<Steerable<Vector2>> enemies;
 	private Array<Steerable<Vector2>> enemiesToDelete;
@@ -66,6 +67,7 @@ public class NPCManager {
 		Iterator i = enemiesToDelete.iterator();
 		while (i.hasNext()) {
 			Enemy e = (Enemy)i.next();
+			world.destroyBody(e.body);
 			enemyPool.free(e);
 
 		}
@@ -77,21 +79,20 @@ public class NPCManager {
 
 		NPCType type = NPCType.getById(MathUtils.random(1, 10));
 		Texture t = new Texture(Gdx.files.internal(type.getTexture()));
+		
+		Enemy enemy = enemyPool.obtain();
+		enemy.init(type, TextureRegion.split(t, t.getWidth(), t.getHeight())[0][0], false);
+		WorldUtils.createNPCBody(world, enemy);
 
-		final Enemy enemy = WorldUtils.createNPC(world, TextureRegion.split(t, t.getWidth(), t.getHeight())[0][0], false, type);
+//		final Enemy enemy = WorldUtils.createNPC(world, TextureRegion.split(t, t.getWidth(), t.getHeight())[0][0], false, type);
 		enemy.setMaxLinearSpeed(MathUtils.random(0.5f, 1.5f));
 		enemy.setMaxLinearAcceleration(40);
 
 		RadiusProximity proximity = new RadiusProximity(enemy, world, enemy.getBoundingRadius() * 4);
 		proximities.add(proximity);
-		//			if (i == 0) char0Proximity = proximity;
-		CollisionAvoidance<Vector2> collisionAvoidanceSB = new CollisionAvoidance<Vector2>(enemy, proximity);
 
 		Wander<Vector2> wanderSB = new Wander<Vector2>(enemy) //
-				// Don't use Face internally because independent facing is off
 				.setFaceEnabled(false) //
-				// We don't need a limiter supporting angular components because Face is not used
-				// No need to call setAlignTolerance, setDecelerationRadius and setTimeToTarget for the same reason
 				.setLimiter(new LinearAccelerationLimiter(30)) //
 				.setWanderOffset(60) //
 				.setWanderOrientation(10) //
@@ -109,11 +110,6 @@ public class NPCManager {
 		fleeSB.setLimiter(new LinearAccelerationLimiter(30f));
 		
 		enemy.behaviors.put(EnemyBehavior.FLEE, fleeSB);
-
-//		PrioritySteering<Vector2> prioritySteeringSB = new PrioritySteering<Vector2>(enemy, 0.0001f);
-//		prioritySteeringSB.add(collisionAvoidanceSB);
-//		prioritySteeringSB.add(seekSB);
-//		prioritySteeringSB.add(wanderSB);
 
 		enemy.changeBehavior(EnemyBehavior.WANDER);
 
@@ -141,6 +137,14 @@ public class NPCManager {
 
 		for (int i=0; i<count; i++)
 			newEnemy(world, player);
+	}
+
+	public World getWorld() {
+		return world;
+	}
+
+	public void setWorld(World world) {
+		this.world = world;
 	}
 
 }

@@ -110,6 +110,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		WorldUtils.createWorld(world, groundBody);
 		world.setContactListener(new CollisionListener(player));
 		GameObjectsManager.instance().setWorld(world);
+		NPCManager.instance().setWorld(world);
 
 		WorldUtils.createPlayerBody(world, player);
 		NPCManager.instance().populateEnemies(world, player, 50);
@@ -190,13 +191,13 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 		EffectsManager.instance().renderEffects(batch, deltaTime);
 
-		renderHUD(batch);
+//		renderHUD(batch);
 		batch.end();
 
 		/** BOX2D LIGHT STUFF BEGIN */
 		rayHandler.setCombinedMatrix(camera);
 		lights.get(0).setPosition(WorldUtils.m2px(player.getPosition().x), WorldUtils.m2px(player.getPosition().y));
-		lights.get(0).setDirection(player.getOrientation());
+		lights.get(0).setDirection(player.getOrientation() * MathUtils.radiansToDegrees);
 		rayHandler.updateAndRender();
 
 		if (lightsEnabled) {

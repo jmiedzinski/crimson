@@ -22,8 +22,9 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.utils.Pool.Poolable;
 
-public class Enemy implements Steerable<Vector2> {
+public class Enemy implements Steerable<Vector2>, Poolable {
 	
 	NPCType type;
 	
@@ -365,6 +366,11 @@ public class Enemy implements Steerable<Vector2> {
 
 	public NPCType getType() {
 		return type;
+	}
+
+	@Override
+	public void reset() {
+		font.dispose();
 	}
 	
 }

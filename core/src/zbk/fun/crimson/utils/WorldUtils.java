@@ -69,7 +69,7 @@ public class WorldUtils {
 		bodyDef.position.set(px2m(Gdx.graphics.getWidth() / 2), px2m(Gdx.graphics.getHeight() / 2));
 
 		player.body = world.createBody(bodyDef);
-		float radiusInMeters = px2m((int) ((player.getWidth() + player.getHeight()) / 3f));
+		float radiusInMeters = px2m((int) ((player.getWidth() + player.getHeight()) / 6f));
 
 		// Create a circle shape and set its radius to 6
 		CircleShape circle = new CircleShape();
@@ -176,18 +176,6 @@ public class WorldUtils {
 		enemy.setBody(characterBody);
 	}
 	
-	public static Enemy createNPC (World world, TextureRegion region, NPCType type) {
-		return createNPC(world, region, false, type);
-	}
-
-	public static Enemy createNPC (World world, TextureRegion region, boolean independentFacing, NPCType type) {
-
-		Enemy e = new Enemy();
-		e.init(type, region, independentFacing);
-		WorldUtils.createNPCBody(world, e);
-		return e;
-	}
-
 	public static void setRandomNonOverlappingPosition (Enemy character, Array<Steerable<Vector2>> others, float minDistanceFromBoundary) {
 		int maxTries = Math.max(100, others.size * others.size); 
 		SET_NEW_POS:

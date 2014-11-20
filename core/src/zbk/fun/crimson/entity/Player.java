@@ -138,7 +138,7 @@ public class Player implements InputProcessor, Steerable<Vector2> {
 		} else {
 			moving = false;
 		}
-		body.setTransform(WorldUtils.px2m((int) position.x), WorldUtils.px2m((int) position.y), rotation);
+		body.setTransform(WorldUtils.px2m((int) position.x), WorldUtils.px2m((int) position.y), rotation * MathUtils.degreesToRadians);
 
 	}
 
