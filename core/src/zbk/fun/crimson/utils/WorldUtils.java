@@ -91,7 +91,7 @@ public class WorldUtils {
 		circle.dispose();
 		
 		circle = new CircleShape();
-		circle.setRadius(8f);
+		circle.setRadius(4f);
 		
 		fixtureDef = new FixtureDef();
 		fixtureDef.isSensor = true;
@@ -167,6 +167,7 @@ public class WorldUtils {
 
 		FixtureDef charFixtureDef = new FixtureDef();
 		charFixtureDef.density = 1;
+		charFixtureDef.friction = 0.4f;
 		charFixtureDef.shape = circleChape;
 		charFixtureDef.filter.groupIndex = 0;
 		characterBody.createFixture(charFixtureDef);

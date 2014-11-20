@@ -260,6 +260,23 @@ public class Enemy implements Steerable<Vector2> {
 
 	}
 	
+	public PooledEffect effect(Explosive e) {
+
+		PooledEffect effect = EffectsManager.instance().newBloodEffect();
+		effect.setPosition(WorldUtils.m2px(body.getPosition().x)-region.getRegionWidth()/2, WorldUtils.m2px(body.getPosition().y)-region.getRegionHeight()/2);
+		float rotation = this.getPosition().sub(e.position).angle();
+//		Add a comment to this line
+		for (int i = 0; i < effect.getEmitters().size; i++) {                          
+			ScaledNumericValue val = effect.getEmitters().get(i).getAngle();           
+			float h1 = rotation + 90f;                                            
+			float h2 = rotation - 90f;                                            
+			val.setHigh(h1, h2);                                           
+			val.setLow(rotation);       
+		}   
+		return effect;
+
+	}
+	
 	public void changeBehavior(EnemyBehavior enemyBehavior) {
 		
 		steeringBehavior = behaviors.get(enemyBehavior);

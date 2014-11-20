@@ -20,6 +20,7 @@ import box2dLight.RayHandler;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
@@ -38,6 +39,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 
 public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
@@ -63,9 +65,15 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 	RayHandler rayHandler;
 	ArrayList<Light> lights = new ArrayList<Light>();
 
+	Box2DDebugRenderer debugRenderer;
+	Matrix4 debugMatrix;
+
+	boolean box2dDebug = false;
+	boolean lightsEnabled = true;
+
 	@Override
 	public void create () {
-		
+
 		batch = new SpriteBatch();
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, 800, 600);
@@ -98,35 +106,39 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		normalProjection.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
 		this.world = new World(new Vector2(0, 0), true);
-		
+
 		WorldUtils.createWorld(world, groundBody);
 		world.setContactListener(new CollisionListener(player));
 		GameObjectsManager.instance().setWorld(world);
-		
+
 		WorldUtils.createPlayerBody(world, player);
 		NPCManager.instance().populateEnemies(world, player, 50);
-		
+
 		GameObjectsManager.instance().newWeapon(WeaponType.PISTOL);
 		GameObjectsManager.instance().newWeapon(WeaponType.SHOTGUN);
 		GameObjectsManager.instance().newWeapon(WeaponType.MACHINE_GUN);
-		
+
 		/** BOX2D LIGHT STUFF BEGIN */
 		RayHandler.setGammaCorrection(true);
 		RayHandler.useDiffuseLight(true);
-		
+
 		rayHandler = new RayHandler(world);
 		rayHandler.setAmbientLight(0.5f, 0.5f, 0.5f, 0.5f);
 		rayHandler.setBlurNum(3);
 		rayHandler.setShadows(true);
-		
+
 		LightsManager.instance().setRayHandler(rayHandler);
 		LightsManager.instance().newLight(LightSourceType.LIGHTSTICK, new Vector2(100f, 100f));
-		
-//		PointLight light = new PointLight(rayHandler, 128, Color.WHITE, 300f, player.getPosition().x, player.getPosition().y);
-//		lights.add(light);
+
+		//		PointLight light = new PointLight(rayHandler, 128, Color.WHITE, 300f, player.getPosition().x, player.getPosition().y);
+		//		lights.add(light);
 		ConeLight coneLight = new ConeLight(rayHandler, 128, Color.WHITE, 400f, player.getPosition().x, player.getPosition().y, player.getOrientation(), 30f);
 		lights.add(coneLight);
 		/** BOX2D LIGHT STUFF END */
+
+		debugRenderer = new Box2DDebugRenderer();
+		debugMatrix = new Matrix4(camera.combined);
+		debugMatrix.scale(50f, 50f, 1f);
 
 	}
 
@@ -150,7 +162,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public void render () {
-		
+
 		float deltaTime = Gdx.graphics.getDeltaTime();
 
 		world.step(deltaTime, 8, 3);
@@ -167,7 +179,7 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		MarksManager.instance().renderMarks(batch, deltaTime);
 
 		player.render(batch, deltaTime);
-		
+
 		GameObjectsManager.instance().renderWeapons(batch, deltaTime);
 
 		NPCManager.instance().renderEnemies(batch, deltaTime);
@@ -177,18 +189,20 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		GameObjectsManager.instance().renderExplosives(batch, deltaTime);
 
 		EffectsManager.instance().renderEffects(batch, deltaTime);
-		
+
 		renderHUD(batch);
 		batch.end();
-		
+
 		/** BOX2D LIGHT STUFF BEGIN */
 		rayHandler.setCombinedMatrix(camera);
 		lights.get(0).setPosition(WorldUtils.m2px(player.getPosition().x), WorldUtils.m2px(player.getPosition().y));
 		lights.get(0).setDirection(player.getOrientation());
 		rayHandler.updateAndRender();
-		
-		LightsManager.instance().render(deltaTime);
-		
+
+		if (lightsEnabled) {
+			LightsManager.instance().render(deltaTime);
+		}
+
 		/** BOX2D LIGHT STUFF END */
 
 		moveCamera();
@@ -207,6 +221,12 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 		font.draw(batch, "LIF: " + Float.toString(player.life), 10, 600 - (lines*15)); 	lines++;
 
 		batch.end();
+
+		if (box2dDebug) {
+			debugMatrix.set(camera.combined);
+			debugMatrix.scale(50f, 50f, 1f);
+			debugRenderer.render(world, debugMatrix);
+		}
 
 	}
 
@@ -232,14 +252,13 @@ public class CrimsonGame extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public boolean keyDown(int keycode) {
-		if(keycode == Input.Keys.LEFT)
-			camera.translate(-32,0);
-		if(keycode == Input.Keys.RIGHT)
-			camera.translate(32,0);
-		if(keycode == Input.Keys.UP)
-			camera.translate(0,-32);
-		if(keycode == Input.Keys.DOWN)
-			camera.translate(0,32);
+		if (keycode == Keys.F1)
+			box2dDebug = !box2dDebug;
+		if (keycode == Keys.F2) {
+			lightsEnabled = !lightsEnabled;
+			rayHandler.setShadows(lightsEnabled);
+		}
+		
 
 		return false;
 	}

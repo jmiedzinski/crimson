@@ -99,6 +99,7 @@ public class Explosive implements Poolable {
 			if (enemyPos.dst(position) <= type.getRange()) {
 				e.life -= type.getDamage();
 				e.body.applyForceToCenter(enemyPos.sub(position).nor().scl(100f), true);
+				e.effect(this);
 			}
 		}
 		effect();
