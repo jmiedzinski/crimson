@@ -84,7 +84,7 @@ public class WorldUtils {
 
 		// Create our fixture and attach it to the body
 		Fixture fixture = player.body.createFixture(fixtureDef);
-		fixture.setSensor(true);
+		fixture.setSensor(false);
 		player.body.setUserData(player);
 		player.body.setTransform(px2m((int) player.position.x), px2m((int) player.position.y), player.rotation);
 

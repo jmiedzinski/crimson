@@ -22,7 +22,7 @@ public enum NPCType {
 	
 	private float life;
 	
-	private float damage;
+	private float damagePerSecond;
 	
 	private static Set<NPCType> map = null;
 	
@@ -30,12 +30,12 @@ public enum NPCType {
         map = EnumSet.allOf(NPCType.class);
     }
     
-    private NPCType(int id, String texture, float life, float damage) {
+    private NPCType(int id, String texture, float life, float damagePerSecond) {
 
     	this.id = id;
     	this.texture = texture;
     	this.life = life;
-    	this.damage = damage;
+    	this.damagePerSecond = damagePerSecond;
 	}
     
     public static NPCType getById(int id) {
@@ -59,8 +59,8 @@ public enum NPCType {
 		return life;
 	}
 
-	public float getDamage() {
-		return damage;
+	public float getDamagePerSecond() {
+		return damagePerSecond;
 	}
     
 }

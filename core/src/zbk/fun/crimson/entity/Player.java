@@ -118,7 +118,7 @@ public class Player implements InputProcessor, Steerable<Vector2> {
 		this.boundingRadius = WorldUtils.px2m((width + height) / 2);
 		this.tagged = false;
 		
-		this.life = 200f;
+		this.life = 100f;
 	}
 
 	public void update(float deltaTime) {

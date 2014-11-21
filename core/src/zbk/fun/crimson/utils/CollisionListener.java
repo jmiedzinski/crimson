@@ -4,9 +4,10 @@ import zbk.fun.crimson.entity.Enemy;
 import zbk.fun.crimson.entity.Player;
 import zbk.fun.crimson.entity.Projectile;
 import zbk.fun.crimson.entity.Weapon;
-import zbk.fun.crimson.enums.EnemyBehavior;
+import zbk.fun.crimson.enums.NPCBehavior;
 import zbk.fun.crimson.enums.SurfacemarkType;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Contact;
@@ -61,9 +62,10 @@ public class CollisionListener implements ContactListener {
 		if (enemy != null && bullet != null) {
 			
 			Vector2 enemyPos = new Vector2(WorldUtils.m2px(enemy.body.getPosition().x), WorldUtils.m2px(enemy.body.getPosition().y));
-			enemy.body.applyForceToCenter(bullet.direction.scl(10f), true);
+			enemy.body.applyForceToCenter(bullet.direction.scl(100f), true);
 			enemy.life -= bullet.damage;
-			enemy.changeBehavior(EnemyBehavior.FLEE);
+			enemy.changeBehavior(NPCBehavior.FLEE);
+			enemy.dieTimer.start();
 			bullet.active = false;
 			EffectsManager.instance().getEffects().add(enemy.effect(bullet));
 			MarksManager.instance().getMark().init(SurfacemarkType.BLOODMARK, enemyPos, MathUtils.random(360f));
@@ -73,9 +75,9 @@ public class CollisionListener implements ContactListener {
 		if (enemy != null && player != null) {
 			
 			if (!playerSpotted)
-				player.life -= enemy.getType().getDamage();
+				player.life -= (enemy.getType().getDamagePerSecond() * Gdx.graphics.getDeltaTime());
 			else
-				enemy.changeBehavior(EnemyBehavior.SEEK);
+				enemy.changeBehavior(NPCBehavior.SEEK);
 		}
 		
 		if (weapon != null && player != null) {
@@ -113,7 +115,7 @@ public class CollisionListener implements ContactListener {
 		if (enemy != null && player != null) {
 			
 			if (playerSpotted)
-				enemy.changeBehavior(EnemyBehavior.WANDER);
+				enemy.changeBehavior(NPCBehavior.WANDER);
 		}
 	}
 

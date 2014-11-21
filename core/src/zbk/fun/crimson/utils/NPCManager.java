@@ -5,7 +5,7 @@ import java.util.Iterator;
 import zbk.fun.crimson.ai.RadiusProximity;
 import zbk.fun.crimson.entity.Enemy;
 import zbk.fun.crimson.entity.Player;
-import zbk.fun.crimson.enums.EnemyBehavior;
+import zbk.fun.crimson.enums.NPCBehavior;
 import zbk.fun.crimson.enums.NPCType;
 
 import com.badlogic.gdx.Gdx;
@@ -99,19 +99,19 @@ public class NPCManager {
 				.setWanderRadius(40) //
 				.setWanderRate(MathUtils.PI / 5);
 		
-		enemy.behaviors.put(EnemyBehavior.WANDER, wanderSB);
+		enemy.behaviors.put(NPCBehavior.WANDER, wanderSB);
 
 		Seek<Vector2> seekSB = new Seek<Vector2>(enemy, player);
 		seekSB.setLimiter(new LinearAccelerationLimiter(30));
 		
-		enemy.behaviors.put(EnemyBehavior.SEEK, seekSB);
+		enemy.behaviors.put(NPCBehavior.SEEK, seekSB);
 		
 		Flee<Vector2> fleeSB = new Flee<Vector2>(enemy, player);
 		fleeSB.setLimiter(new LinearAccelerationLimiter(30f));
 		
-		enemy.behaviors.put(EnemyBehavior.FLEE, fleeSB);
+		enemy.behaviors.put(NPCBehavior.FLEE, fleeSB);
 
-		enemy.changeBehavior(EnemyBehavior.WANDER);
+		enemy.changeBehavior(NPCBehavior.WANDER);
 
 		WorldUtils.setRandomNonOverlappingPosition(enemy, enemies, WorldUtils.pixelsToMeters(5));
 
@@ -123,7 +123,7 @@ public class NPCManager {
 
 		for (int i = 0; i < enemies.size; i++) {
 			Enemy character = (Enemy)enemies.get(i);
-			if (character.life <= 0f)
+			if (character.life <= 0f && character.readyToClean)
 				enemiesToDelete.add(character);
 			else {
 				character.update(deltaTime);

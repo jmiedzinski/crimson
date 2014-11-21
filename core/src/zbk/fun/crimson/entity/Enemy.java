@@ -3,9 +3,11 @@ package zbk.fun.crimson.entity;
 import java.util.HashMap;
 import java.util.Map;
 
-import zbk.fun.crimson.enums.EnemyBehavior;
+import zbk.fun.crimson.enums.NPCBehavior;
 import zbk.fun.crimson.enums.NPCType;
 import zbk.fun.crimson.utils.EffectsManager;
+import zbk.fun.crimson.utils.Timer;
+import zbk.fun.crimson.utils.TimerAware;
 import zbk.fun.crimson.utils.WorldUtils;
 
 import com.badlogic.gdx.ai.steer.Steerable;
@@ -24,7 +26,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.utils.Pool.Poolable;
 
-public class Enemy implements Steerable<Vector2>, Poolable {
+public class Enemy implements Steerable<Vector2>, Poolable, TimerAware {
 	
 	NPCType type;
 	
@@ -44,9 +46,9 @@ public class Enemy implements Steerable<Vector2>, Poolable {
 
 	boolean independentFacing;
 	
-	public EnemyBehavior currentBehavior;
+	public NPCBehavior currentBehavior;
 	
-	public Map<EnemyBehavior, SteeringBehavior<Vector2>> behaviors;
+	public Map<NPCBehavior, SteeringBehavior<Vector2>> behaviors;
 	
 	protected SteeringBehavior<Vector2> steeringBehavior;
 	
@@ -54,13 +56,18 @@ public class Enemy implements Steerable<Vector2>, Poolable {
 	
 	private float fleeTime;
 	
+	public Timer dieTimer;
+	
 	BitmapFont font;
 	
+	public boolean readyToClean;
+	
 	public Enemy() {
-		this.behaviors = new HashMap<EnemyBehavior, SteeringBehavior<Vector2>>();
+		this.behaviors = new HashMap<NPCBehavior, SteeringBehavior<Vector2>>();
 		this.font = new BitmapFont();
 		font.setColor(1.0f, 1.0f, 1.0f, 1.0f);
 		font.setScale(1.0f);
+		readyToClean = false;
 	}
 	
 	public void init(NPCType type, TextureRegion region, boolean independentFacing) {
@@ -71,8 +78,9 @@ public class Enemy implements Steerable<Vector2>, Poolable {
 		this.region = region;
 		this.independentFacing = independentFacing;
 		this.tagged = false;
-		fleeTime = 3f;
-		currentBehavior = EnemyBehavior.WANDER;
+		fleeTime = 4f;
+		currentBehavior = NPCBehavior.WANDER;
+		dieTimer = new Timer(2f, this);
 	}
 	
 	public TextureRegion getRegion () {
@@ -137,7 +145,7 @@ public class Enemy implements Steerable<Vector2>, Poolable {
 	}
 	
 	public float getDamage() {
-		return type.getDamage();
+		return type.getDamagePerSecond();
 	}
 
 	@Override
@@ -170,7 +178,7 @@ public class Enemy implements Steerable<Vector2>, Poolable {
 		if (steeringBehavior instanceof Flee<?>) {
 			fleeTime -= deltaTime;
 			if (fleeTime <= 0f) {
-				changeBehavior(EnemyBehavior.WANDER);
+				changeBehavior(NPCBehavior.WANDER);
 				fleeTime = 3f;
 			}
 		}
@@ -278,10 +286,10 @@ public class Enemy implements Steerable<Vector2>, Poolable {
 
 	}
 	
-	public void changeBehavior(EnemyBehavior enemyBehavior) {
+	public void changeBehavior(NPCBehavior nPCBehavior) {
 		
-		steeringBehavior = behaviors.get(enemyBehavior);
-		currentBehavior = enemyBehavior;
+		steeringBehavior = behaviors.get(nPCBehavior);
+		currentBehavior = nPCBehavior;
 	}
 
 	// the display area is considered to wrap around from top to bottom
@@ -371,6 +379,13 @@ public class Enemy implements Steerable<Vector2>, Poolable {
 	@Override
 	public void reset() {
 		font.dispose();
+	}
+
+	@Override
+	public void timeExceeded(Timer timer) {
+
+		if (timer.equals(dieTimer))
+			readyToClean = true;
 	}
 	
 }
